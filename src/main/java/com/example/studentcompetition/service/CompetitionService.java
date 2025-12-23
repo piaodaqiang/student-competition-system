@@ -19,4 +19,10 @@ public class CompetitionService {
 
         return list;
     }
+
+    public void addCompetition(Competition competition) {
+        // 课程设计阶段，暂不持久化
+        System.out.println("新增竞赛：" + competition.getName());
+    }
+
 }
