@@ -1,13 +1,20 @@
 package com.example.studentcompetition.controller;
 
+import com.example.studentcompetition.service.HelloService;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 public class HelloController {
 
+    private final HelloService helloService;
+
+    public HelloController(HelloService helloService) {
+        this.helloService = helloService;
+    }
+
     @GetMapping("/hello")
     public String hello() {
-        return "Hello Spring Boot";
+        return helloService.sayHello();
     }
 }
