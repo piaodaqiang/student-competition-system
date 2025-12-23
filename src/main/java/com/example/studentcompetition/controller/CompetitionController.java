@@ -2,14 +2,12 @@ package com.example.studentcompetition.controller;
 
 import com.example.studentcompetition.model.Competition;
 import com.example.studentcompetition.service.CompetitionService;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 @RestController
+@RequestMapping("/competitions")
 public class CompetitionController {
 
     private final CompetitionService competitionService;
@@ -18,14 +16,22 @@ public class CompetitionController {
         this.competitionService = competitionService;
     }
 
-    @GetMapping("/competitions")
+    // 1️⃣ 查询全部竞赛
+    @GetMapping
     public List<Competition> listCompetitions() {
         return competitionService.listCompetitions();
     }
 
-    @PostMapping("/competitions")
+    // 2️⃣ 新增竞赛
+    @PostMapping
     public String addCompetition(@RequestBody Competition competition) {
         competitionService.addCompetition(competition);
         return "新增成功";
+    }
+
+    // 3️⃣ 根据 ID 查询竞赛详情
+    @GetMapping("/{id}")
+    public Competition getById(@PathVariable int id) {
+        return competitionService.getById(id);
     }
 }
