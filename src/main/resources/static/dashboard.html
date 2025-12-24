@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>竞赛信息管理系统 - 主页</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+        }
+        .sidebar {
+            width: 200px;
+            background-color: #f8f9fa;
+            padding: 20px;
+            border-right: 1px solid #e9ecef;
+            height: 100vh;
+        }
+        .sidebar h3 {
+            color: #343a40;
+            margin-top: 0;
+        }
+        .sidebar ul {
+            list-style-type: none;
+            padding: 0;
+        }
+        .sidebar ul li {
+            margin: 10px 0;
+        }
+        .sidebar ul li a {
+            text-decoration: none;
+            color: #495057;
+            display: block;
+            padding: 8px 12px;
+            border-radius: 4px;
+            transition: background-color 0.3s;
+        }
+        .sidebar ul li a:hover {
+            background-color: #e9ecef;
+        }
+        .main-content {
+            flex: 1;
+            padding: 20px;
+        }
+        .header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .header img {
+            width: 40px;
+            height: 40px;
+            margin-right: 10px;
+        }
+        .header h2 {
+            color: #343a40;
+            margin: 0;
+        }
+        .nav-tabs {
+            margin-bottom: 20px;
+        }
+        .nav-tabs button {
+            padding: 10px 20px;
+            border: 1px solid #dee2e6;
+            background-color: #ffffff;
+            color: #495057;
+            cursor: pointer;
+            border-radius: 4px 4px 0 0;
+            transition: background-color 0.3s;
+        }
+        .nav-tabs button:hover {
+            background-color: #e9ecef;
+        }
+        .nav-tabs button.active {
+            background-color: #2ecc71;
+            color: white;
+            border-bottom: 1px solid #2ecc71;
+        }
+        .content-section {
+            display: none;
+            padding: 20px;
+            border: 1px solid #dee2e6;
+            border-radius: 0 4px 4px 4px;
+            background-color: white;
+        }
+        .content-section.active {
+            display: block;
+        }
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            background-color: #2ecc71;
+            color: white;
+            font-size: 14px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        .btn:hover {
+            background-color: #27ae60;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        table th, table td {
+            border: 1px solid #dee2e6;
+            padding: 8px;
+            text-align: left;
+        }
+        table th {
+            background-color: #f8f9fa;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            display: inline-block;
+            width: 100px;
+            margin-right: 10px;
+        }
+        .form-group input, .form-group select {
+            padding: 8px;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="sidebar">
+        <h3>学生竞赛管理系统</h3>
+        <ul>
+            <li><a href="#" onclick="showSection('dashboard')">主页面</a></li>
+            <li><a href="#" onclick="showSection('competition-info')">竞赛信息</a></li>
+            <li><a href="#" onclick="showSection('add-competition')">添加竞赛</a></li>
+            <li><a href="#" onclick="showSection('delete-competition')">删除竞赛</a></li>
+            <li><a href="#" onclick="showSection('add-participant')">添加参赛人员</a></li>
+            <li><a href="#" onclick="showSection('delete-participant')">删除参赛人员</a></li>
+            <li><a href="#" onclick="showSection('edit-info')">修改信息</a></li>
+            <li><a href="index.html" onclick="return confirm('确定要退出登录吗？')">退出登录</a></li>
+        </ul>
+    </div>
+
+    <div class="main-content">
+        <div class="header">
+            <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40' viewBox='0 0 24 24' fill='%232ecc71'%3E%3Cpath d='M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5'/%3E%3C/svg%3E" alt="Logo">
+            <h2>竞赛信息管理系统</h2>
+        </div>
+
+        <div class="nav-tabs">
+            <button class="active" onclick="showSection('dashboard')">主页面</button>
+            <button onclick="showSection('competition-info')">竞赛信息</button>
+            <button onclick="showSection('add-competition')">添加竞赛</button>
+            <button onclick="showSection('delete-competition')">删除竞赛</button>
+            <button onclick="showSection('add-participant')">添加参赛人员</button>
+            <button onclick="showSection('delete-participant')">删除参赛人员</button>
+            <button onclick="showSection('edit-info')">修改信息</button>
+        </div>
+
+        <!-- 主页面 -->
+        <div id="dashboard" class="content-section active">
+            <h3>欢迎使用竞赛信息管理系统</h3>
+            <p>请从上方选择您需要的操作。</p>
+        </div>
+
+        <!-- 竞赛信息 -->
+        <div id="competition-info" class="content-section">
+            <h3>竞赛信息</h3>
+            <h4>竞赛列表</h4>
+            <table id="competition-table">
+                <thead>
+                    <tr>
+                        <th>竞赛名称</th>
+                        <th>时间</th>
+                        <th>参与人数</th>
+                        <th>地点</th>
+                        <th>获奖人数</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody id="competition-table-body">
+                    <!-- 竞赛数据将通过JavaScript动态加载 -->
+                </tbody>
+            </table>
+
+            <h4>参赛人员列表</h4>
+            <table id="participant-table">
+                <thead>
+                    <tr>
+                        <th>竞赛名称</th>
+                        <th>参赛人员姓名</th>
+                        <th>参赛人员学院</th>
+                        <th>参赛人员班级</th>
+                        <th>参赛人员学号</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody id="participant-table-body">
+                    <!-- 参赛人员数据将通过JavaScript动态加载 -->
+                </tbody>
+            </table>
+        </div>
+
+        <!-- 添加竞赛 -->
+        <div id="add-competition" class="content-section">
+            <h3>添加竞赛</h3>
+            <form id="add-competition-form">
+                <div class="form-group">
+                    <label for="competition-name">竞赛名称</label>
+                    <input type="text" id="competition-name" placeholder="输入竞赛名称" required>
+                </div>
+                <div class="form-group">
+                    <label for="participant-count">参赛人数</label>
+                    <input type="number" id="participant-count" placeholder="输入参赛人数" required>
+                </div>
+                <div class="form-group">
+                    <label for="competition-time">时间</label>
+                    <input type="date" id="competition-time" required>
+                </div>
+                <div class="form-group">
+                    <label for="winner-count">获奖人数</label>
+                    <input type="number" id="winner-count" placeholder="输入获奖人数" required>
+                </div>
+                <div class="form-group">
+                    <label for="competition-location">地点</label>
+                    <input type="text" id="competition-location" placeholder="点击输入地点" required>
+                </div>
+                <button type="submit" class="btn">确认</button>
+            </form>
+        </div>
+
+        <!-- 删除竞赛 -->
+        <div id="delete-competition" class="content-section">
+            <h3>删除竞赛</h3>
+            <form id="delete-competition-form">
+                <div class="form-group">
+                    <label for="delete-competition-id">竞赛ID</label>
+                    <input type="number" id="delete-competition-id" placeholder="输入竞赛ID" required>
+                </div>
+                <div class="form-group">
+                    <label for="delete-competition-name">竞赛名称</label>
+                    <input type="text" id="delete-competition-name" placeholder="输入竞赛名称" required>
+                </div>
+                <button type="submit" class="btn">确认删除</button>
+            </form>
+        </div>
+
+        <!-- 添加参赛人员 -->
+        <div id="add-participant" class="content-section">
+            <h3>添加参赛人员</h3>
+            <form id="add-participant-form">
+                <div class="form-group">
+                    <label for="participant-competition">竞赛名称</label>
+                    <select id="participant-competition" required>
+                        <!-- 竞赛选项将通过JavaScript动态加载 -->
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="participant-name">姓名</label>
+                    <input type="text" id="participant-name" placeholder="输入姓名" required>
+                </div>
+                <div class="form-group">
+                    <label for="participant-college">学院</label>
+                    <input type="text" id="participant-college" placeholder="输入学院" required>
+                </div>
+                <div class="form-group">
+                    <label for="participant-class">班级</label>
+                    <input type="text" id="participant-class" placeholder="输入班级" required>
+                </div>
+                <div class="form-group">
+                    <label for="participant-student-id">学号</label>
+                    <input type="text" id="participant-student-id" placeholder="输入学号" required>
+                </div>
+                <button type="submit" class="btn">确认添加</button>
+            </form>
+        </div>
+
+        <!-- 删除参赛人员 -->
+        <div id="delete-participant" class="content-section">
+            <h3>删除参赛人员</h3>
+            <form id="delete-participant-form">
+                <div class="form-group">
+                    <label for="delete-participant-competition">竞赛名称</label>
+                    <select id="delete-participant-competition" required>
+                        <!-- 竞赛选项将通过JavaScript动态加载 -->
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="delete-participant-student-id">学号</label>
+                    <input type="text" id="delete-participant-student-id" placeholder="输入学号" required>
+                </div>
+                <button type="submit" class="btn">确认删除</button>
+            </form>
+        </div>
+
+        <!-- 修改信息 -->
+        <div id="edit-info" class="content-section">
+            <h3>修改竞赛信息</h3>
+            <form id="edit-competition-form">
+                <div class="form-group">
+                    <label for="edit-competition-id">竞赛ID</label>
+                    <input type="number" id="edit-competition-id" placeholder="输入竞赛ID" required>
+                </div>
+                <div class="form-group">
+                    <label for="edit-competition-name">竞赛名称</label>
+                    <input type="text" id="edit-competition-name" placeholder="输入竞赛名称">
+                </div>
+                <div class="form-group">
+                    <label for="edit-competition-level">竞赛级别</label>
+                    <input type="text" id="edit-competition-level" placeholder="输入竞赛级别（国家级/省级/校级）">
+                </div>
+                <div class="form-group">
+                    <label for="edit-participant-count">参赛人数</label>
+                    <input type="number" id="edit-participant-count" placeholder="输入参赛人数">
+                </div>
+                <div class="form-group">
+                    <label for="edit-competition-time">时间</label>
+                    <input type="date" id="edit-competition-time">
+                </div>
+                <div class="form-group">
+                    <label for="edit-winner-count">获奖人数</label>
+                    <input type="number" id="edit-winner-count" placeholder="输入获奖人数">
+                </div>
+                <div class="form-group">
+                    <label for="edit-competition-location">地点</label>
+                    <input type="text" id="edit-competition-location" placeholder="输入地点">
+                </div>
+                <button type="submit" class="btn">确认修改</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // 模拟竞赛数据
+        let mockCompetitions = [
+            { id: 1, name: '全国大学生程序设计竞赛', level: '国家级', time: '2024-12-31T18:00:00.000+00:00', participantCount: 200, location: '北京', winnerCount: 30 },
+            { id: 2, name: '省级数学建模竞赛', level: '省级', time: '2024-11-15T10:00:00.000+00:00', participantCount: 150, location: '上海', winnerCount: 25 },
+            { id: 3, name: '校级英语演讲比赛', level: '校级', time: '2024-10-10T14:00:00.000+00:00', participantCount: 50, location: '广州', winnerCount: 10 }
+        ];
+
+        // 显示指定的内容区域
+        function showSection(sectionId) {
+            // 隐藏所有内容区域
+            const sections = document.querySelectorAll('.content-section');
+            sections.forEach(section => section.classList.remove('active'));
+            
+            // 移除所有标签的激活状态
+            const tabs = document.querySelectorAll('.nav-tabs button');
+            tabs.forEach(tab => tab.classList.remove('active'));
+            
+            // 显示选中的内容区域
+            document.getElementById(sectionId).classList.add('active');
+            
+            // 设置选中标签的激活状态
+            event.target.classList.add('active');
+        }
+
+        // 加载竞赛数据
+        function loadCompetitions() {
+            const tableBody = document.getElementById('competition-table-body');
+            tableBody.innerHTML = '';
+            
+            mockCompetitions.forEach(competition => {
+                // 转换日期格式
+                const date = new Date(competition.time);
+                const formattedDate = date.toLocaleDateString('zh-CN', {
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+                
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${competition.name}</td>
+                    <td>${formattedDate}</td>
+                    <td>${competition.participantCount}</td>
+                    <td>${competition.location}</td>
+                    <td>${competition.winnerCount}</td>
+                    <td><button class="btn" onclick="editCompetition(${competition.id})">编辑</button></td>
+                `;
+                tableBody.appendChild(row);
+            });
+
+            // 加载竞赛选项到下拉菜单
+            const competitionSelects = document.querySelectorAll('#participant-competition, #delete-participant-competition');
+            competitionSelects.forEach(select => {
+                select.innerHTML = '';
+                mockCompetitions.forEach(competition => {
+                    const option = document.createElement('option');
+                    option.value = competition.name;
+                    option.textContent = competition.name;
+                    select.appendChild(option);
+                });
+            });
+        }
+
+
+
+        // 编辑竞赛
+        function editCompetition(id) {
+            // 从模拟数据中获取竞赛详情
+            const competition = mockCompetitions.find(comp => comp.id === id);
+            
+            if (competition) {
+                // 填充编辑表单
+                document.getElementById('edit-competition-id').value = competition.id;
+                document.getElementById('edit-competition-name').value = competition.name;
+                document.getElementById('edit-competition-level').value = competition.level;
+                document.getElementById('edit-participant-count').value = competition.participantCount;
+                // 转换日期格式为YYYY-MM-DD
+                const date = new Date(competition.time);
+                const formattedDate = date.toISOString().split('T')[0];
+                document.getElementById('edit-competition-time').value = formattedDate;
+                document.getElementById('edit-competition-location').value = competition.location;
+                document.getElementById('edit-winner-count').value = competition.winnerCount;
+                
+                // 显示编辑表单
+                showSection('edit-info');
+            } else {
+                alert('竞赛不存在');
+            }
+        }
+
+        // 删除参赛人员
+        function deleteParticipant(participantId) {
+            if (confirm(`确定要删除该参赛人员吗？`)) {
+                // 从模拟数据中删除参赛人员
+                mockParticipants = mockParticipants.filter(p => p.id !== participantId);
+                alert('参赛人员已删除');
+                loadParticipants();
+            }
+        }
+
+        // 添加竞赛表单提交
+        document.getElementById('add-competition-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const name = document.getElementById('competition-name').value;
+            const time = document.getElementById('competition-time').value;
+            const participantCount = parseInt(document.getElementById('participant-count').value);
+            const location = document.getElementById('competition-location').value;
+            const winnerCount = parseInt(document.getElementById('winner-count').value);
+            
+            // 生成新的竞赛ID
+            const newId = Math.max(...mockCompetitions.map(comp => comp.id), 0) + 1;
+            
+            // 创建新的竞赛对象
+            const newCompetition = {
+                id: newId,
+                name: name,
+                level: '校级', // 默认级别
+                time: new Date(time).toISOString(),
+                participantCount: participantCount,
+                location: location,
+                winnerCount: winnerCount
+            };
+            
+            // 添加到模拟数据中
+            mockCompetitions.push(newCompetition);
+            alert(`竞赛"${name}"已添加`);
+            this.reset();
+            loadCompetitions();
+        });
+
+        // 删除竞赛
+        function deleteCompetition(id, name) {
+            if (confirm(`确定要删除竞赛"${name}"吗？`)) {
+                // 从模拟数据中删除竞赛
+                mockCompetitions = mockCompetitions.filter(competition => competition.id !== id);
+                alert(`竞赛"${name}"已删除`);
+                loadCompetitions();
+            }
+        }
+
+        // 删除竞赛表单提交
+        document.getElementById('delete-competition-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const id = parseInt(document.getElementById('delete-competition-id').value);
+            const name = document.getElementById('delete-competition-name').value;
+            
+            deleteCompetition(id, name);
+            this.reset();
+        });
+
+        // 模拟参赛人员数据
+        let mockParticipants = [
+            { id: 1, competitionName: '全国大学生程序设计竞赛', name: '张三', college: '计算机学院', className: '计科1班', studentId: '20210101' },
+            { id: 2, competitionName: '全国大学生程序设计竞赛', name: '李四', college: '计算机学院', className: '计科2班', studentId: '20210102' },
+            { id: 3, competitionName: '省级数学建模竞赛', name: '王五', college: '数学学院', className: '数学1班', studentId: '20210201' }
+        ];
+
+        // 加载参赛人员数据
+        function loadParticipants() {
+            const tableBody = document.getElementById('participant-table-body');
+            tableBody.innerHTML = '';
+
+            mockParticipants.forEach(participant => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${participant.competitionName || '未知竞赛'}</td>
+                    <td>${participant.name}</td>
+                    <td>${participant.college}</td>
+                    <td>${participant.className}</td>
+                    <td>${participant.studentId}</td>
+                    <td><button class="btn" onclick="deleteParticipant(${participant.id})">删除</button></td>
+                `;
+                tableBody.appendChild(row);
+            });
+        }
+
+        // 添加参赛人员表单提交
+        document.getElementById('add-participant-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const competition = document.getElementById('participant-competition').value;
+            const name = document.getElementById('participant-name').value;
+            const college = document.getElementById('participant-college').value;
+            const className = document.getElementById('participant-class').value;
+            const studentId = document.getElementById('participant-student-id').value;
+            
+            // 生成新的参赛人员ID
+            const newId = Math.max(...mockParticipants.map(p => p.id), 0) + 1;
+            
+            // 创建新的参赛人员对象
+            const newParticipant = {
+                id: newId,
+                competitionName: competition,
+                name: name,
+                college: college,
+                className: className,
+                studentId: studentId
+            };
+            
+            // 添加到模拟数据中
+            mockParticipants.push(newParticipant);
+            alert(`参赛人员${name}已添加到竞赛"${competition}"`);
+            this.reset();
+            loadParticipants();
+        });
+
+        // 删除参赛人员表单提交
+        document.getElementById('delete-participant-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const competition = document.getElementById('delete-participant-competition').value;
+            const studentId = document.getElementById('delete-participant-student-id').value;
+            
+            deleteParticipant(competition, studentId);
+            this.reset();
+        });
+
+        // 修改竞赛表单提交
+        document.getElementById('edit-competition-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const id = parseInt(document.getElementById('edit-competition-id').value);
+            const name = document.getElementById('edit-competition-name').value;
+            const level = document.getElementById('edit-competition-level').value;
+            const participantCount = parseInt(document.getElementById('edit-participant-count').value);
+            const time = document.getElementById('edit-competition-time').value;
+            const location = document.getElementById('edit-competition-location').value;
+            const winnerCount = parseInt(document.getElementById('edit-winner-count').value);
+            
+            // 在模拟数据中查找竞赛
+            const index = mockCompetitions.findIndex(comp => comp.id === id);
+            
+            if (index !== -1) {
+                // 更新竞赛信息
+                mockCompetitions[index] = {
+                    ...mockCompetitions[index],
+                    name: name,
+                    level: level,
+                    participantCount: participantCount,
+                    time: new Date(time).toISOString(),
+                    location: location,
+                    winnerCount: winnerCount
+                };
+                
+                alert(`竞赛ID: ${id}已修改成功`);
+                this.reset();
+                loadCompetitions();
+            } else {
+                alert('竞赛不存在');
+            }
+        });
+
+        // 页面加载完成后加载数据
+        document.addEventListener('DOMContentLoaded', function() {
+            loadCompetitions();
+            loadParticipants();
+        });
+    </script>
+</body>
+</html>

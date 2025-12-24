@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>登录/注册 - 学生竞赛信息管理系统</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f5f5f5;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+        .container {
+            background-color: #ffffff;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            width: 350px;
+        }
+        h2 {
+            color: #333333;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            color: #555555;
+        }
+        .form-group input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #dddddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        .btn {
+            width: 100%;
+            padding: 10px;
+            margin: 5px 0;
+            border: none;
+            border-radius: 4px;
+            background-color: #2ecc71;
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        .btn:hover {
+            background-color: #27ae60;
+        }
+        .btn-secondary {
+            background-color: #95a5a6;
+        }
+        .btn-secondary:hover {
+            background-color: #7f8c8d;
+        }
+        .error-message {
+            color: #e74c3c;
+            font-size: 14px;
+            margin-top: 5px;
+        }
+        .toggle-form {
+            text-align: center;
+            margin-top: 15px;
+        }
+        .toggle-form a {
+            color: #3498db;
+            text-decoration: none;
+        }
+        .toggle-form a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <!-- 登录表单 -->
+    <div class="container" id="login-container">
+        <h2>学生竞赛信息管理系统</h2>
+        <form id="login-form">
+            <div class="form-group">
+                <label for="login-username">用户名</label>
+                <input type="text" id="login-username" placeholder="输入用户名" required>
+            </div>
+            <div class="form-group">
+                <label for="login-password">密码</label>
+                <input type="password" id="login-password" placeholder="输入密码" required>
+            </div>
+            <button type="submit" class="btn">登录</button>
+            <button type="button" class="btn btn-secondary" onclick="location.href='index.html'">返回</button>
+        </form>
+        <div class="toggle-form">
+            <p>还没有账号？<a href="#" onclick="showRegisterForm()">点击注册</a></p>
+        </div>
+    </div>
+
+    <!-- 注册表单 -->
+    <div class="container" id="register-container" style="display: none;">
+        <h2>学生竞赛信息管理系统</h2>
+        <form id="register-form">
+            <div class="form-group">
+                <label for="register-username">用户名</label>
+                <input type="text" id="register-username" placeholder="输入用户名" required>
+                <div class="error-message" id="username-error"></div>
+            </div>
+            <div class="form-group">
+                <label for="register-student-id">学号</label>
+                <input type="text" id="register-student-id" placeholder="输入学号" required>
+                <div class="error-message" id="student-id-error"></div>
+            </div>
+            <div class="form-group">
+                <label for="register-password">密码</label>
+                <input type="password" id="register-password" placeholder="输入密码" required>
+                <div class="error-message" id="password-error"></div>
+            </div>
+            <div class="form-group">
+                <label for="register-confirm-password">确认密码</label>
+                <input type="password" id="register-confirm-password" placeholder="再次输入密码" required>
+            </div>
+            <div class="form-group">
+                <label for="register-email">邮箱</label>
+                <input type="email" id="register-email" placeholder="输入邮箱" required>
+            </div>
+            <button type="submit" class="btn">注册</button>
+            <button type="button" class="btn btn-secondary" onclick="location.href='index.html'">返回</button>
+        </form>
+        <div class="toggle-form">
+            <p>已有账号？<a href="#" onclick="showLoginForm()">点击登录</a></p>
+        </div>
+    </div>
+
+    <script>
+        function showRegisterForm() {
+            document.getElementById('login-container').style.display = 'none';
+            document.getElementById('register-container').style.display = 'block';
+        }
+
+        function showLoginForm() {
+            document.getElementById('register-container').style.display = 'none';
+            document.getElementById('login-container').style.display = 'block';
+        }
+
+        // 页面加载时检查URL参数
+        document.addEventListener('DOMContentLoaded', function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const action = urlParams.get('action');
+            if (action === 'register') {
+                showRegisterForm();
+            }
+        });
+
+        // 登录表单提交
+        document.getElementById('login-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const username = document.getElementById('login-username').value;
+            const password = document.getElementById('login-password').value;
+            
+            // 调用后端登录API
+            fetch('/users/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ username, password })
+            })
+            .then(response => response.json())
+            .then(user => {
+                if (user) {
+                    alert('登录成功');
+                    // 保存用户信息到localStorage
+                    localStorage.setItem('currentUser', JSON.stringify(user));
+                    window.location.href = 'dashboard.html';
+                } else {
+                    alert('用户名或密码错误');
+                }
+            })
+            .catch(error => {
+                console.error('登录失败:', error);
+                alert('登录失败，请稍后重试');
+            });
+        });
+
+        // 注册表单提交
+        document.getElementById('register-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const username = document.getElementById('register-username').value;
+            const studentId = document.getElementById('register-student-id').value;
+            const password = document.getElementById('register-password').value;
+            const confirmPassword = document.getElementById('register-confirm-password').value;
+            const email = document.getElementById('register-email').value;
+            
+            // 简单的前端验证
+            let isValid = true;
+            
+            // 验证用户名
+            if (username.length < 3) {
+                document.getElementById('username-error').textContent = '用户名长度不能少于3个字符';
+                isValid = false;
+            } else {
+                document.getElementById('username-error').textContent = '';
+            }
+            
+            // 验证学号
+            if (!/^\d+$/.test(studentId)) {
+                document.getElementById('student-id-error').textContent = '学号只能包含数字';
+                isValid = false;
+            } else {
+                document.getElementById('student-id-error').textContent = '';
+            }
+            
+            // 验证密码
+            if (password.length < 6) {
+                document.getElementById('password-error').textContent = '密码长度不能少于6个字符';
+                isValid = false;
+            } else {
+                document.getElementById('password-error').textContent = '';
+            }
+            
+            // 验证密码一致性
+            if (password !== confirmPassword) {
+                alert('两次输入的密码不一致');
+                isValid = false;
+            }
+            
+            if (isValid) {
+                // 调用后端注册API
+                fetch('/users/register', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ username, password, studentId, email })
+                })
+                .then(response => response.json())
+                .then(user => {
+                    if (user) {
+                        alert('注册成功，请登录');
+                        showLoginForm();
+                    } else {
+                        alert('注册失败，用户名或学号可能已存在');
+                    }
+                })
+                .catch(error => {
+                    console.error('注册失败:', error);
+                    alert('注册失败，请稍后重试');
+                });
+            }
+        });
+    </script>
+</body>
+</html>
