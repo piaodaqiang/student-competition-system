@@ -1,11 +1,12 @@
 package com.example.studentcompetition.service;
 
-import com.example.studentcompetition.model.User;
-import org.springframework.stereotype.Service;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+
+import org.springframework.stereotype.Service;
+
+import com.example.studentcompetition.model.User;
 
 @Service
 public class UserService {
