@@ -76,23 +76,21 @@ public class M1 extends JFrame {
 
     private void addImageToWindow() {
         JPanel imagePanel = new JPanel();
-        imagePanel.setLayout(null);
+        imagePanel.setLayout(new BorderLayout());
         imagePanel.setBounds(0, 0, getWidth(), getHeight() / 2);
+        imagePanel.setBackground(Color.WHITE);
 
-        // 创建一个 ImageIcon 来显示图片
-        ImageIcon originalIcon = new ImageIcon("src/main/resources/static/logo.jpg");
-        if (originalIcon.getImageLoadStatus() == MediaTracker.ERRORED) {
-            // 如果图片加载失败，使用默认文本
+        try {
+            // 使用默认文本代替图片，避免路径问题
+            JLabel titleLabel = new JLabel("学生竞赛系统", SwingConstants.CENTER);
+            titleLabel.setFont(new Font("宋体", Font.BOLD, 32));
+            titleLabel.setForeground(new Color(0, 102, 204));
+            imagePanel.add(titleLabel, BorderLayout.CENTER);
+        } catch (Exception e) {
+            // 如果发生任何错误，显示默认文本
             JLabel errorLabel = new JLabel("学生竞赛系统", SwingConstants.CENTER);
             errorLabel.setFont(new Font("宋体", Font.BOLD, 24));
-            errorLabel.setBounds(0, 0, getWidth(), getHeight() / 2);
-            imagePanel.add(errorLabel);
-        } else {
-            Image originalImage = originalIcon.getImage();
-            Image scaledImage = originalImage.getScaledInstance(230, getHeight() / 2, Image.SCALE_SMOOTH);
-            JLabel imageLabel = new JLabel(new ImageIcon(scaledImage), SwingConstants.CENTER);
-            imageLabel.setBounds(0, 0, getWidth(), getHeight() / 2);
-            imagePanel.add(imageLabel);
+            imagePanel.add(errorLabel, BorderLayout.CENTER);
         }
 
         add(imagePanel);
