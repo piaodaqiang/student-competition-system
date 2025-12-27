@@ -10,6 +10,7 @@ import java.awt.Font;
 import java.awt.GridLayout;
 import java.awt.Insets;
 import java.awt.event.ActionEvent;
+import java.awt.event.MouseAdapter;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -27,6 +28,8 @@ import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.JTextField;
 import javax.swing.SwingConstants;
+import javax.swing.SwingUtilities;
+import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 
 public class AdminFrame extends JFrame {
@@ -36,6 +39,14 @@ public class AdminFrame extends JFrame {
     // 竞赛数据
     private List<AdminCompetitionData> competitions;
     private DefaultTableModel competitionTableModel;
+    
+    // 当前编辑的竞赛信息
+    private Long currentEditingCompetitionId;
+    private AdminCompetitionData currentEditingCompetition;
+    
+    // 参赛人员数据
+    private List<ParticipantData> participants;
+    private DefaultTableModel participantTableModel;
 
     public AdminFrame() {
         initializeData();
@@ -48,6 +59,12 @@ public class AdminFrame extends JFrame {
         competitions.add(new AdminCompetitionData(1L, "程序设计竞赛", "国家级", "2024-12-30 14:00", "广州大学", 100, 20, "进行中"));
         competitions.add(new AdminCompetitionData(2L, "数学建模竞赛", "省级", "2024-11-20 09:00", "华南理工大学", 80, 15, "已结束"));
         competitions.add(new AdminCompetitionData(3L, "英语演讲比赛", "校级", "2024-10-15 10:00", "广东工业大学", 50, 10, "已结束"));
+        
+        // 初始化参赛人员数据
+        participants = new ArrayList<>();
+        participants.add(new ParticipantData(1L, 1L, "202100001", "张三", "计算机学院", "计算机科学与技术", "已确认"));
+        participants.add(new ParticipantData(2L, 1L, "202100002", "李四", "电子学院", "电子工程", "已确认"));
+        participants.add(new ParticipantData(3L, 2L, "202100003", "王五", "机械学院", "机械工程", "已确认"));
     }
 
     private void createUI() {
@@ -119,6 +136,7 @@ public class AdminFrame extends JFrame {
         mainContentPanel.add(createWelcomePanel(), "welcome");
         mainContentPanel.add(createUserManagePanel(), "userManage");
         mainContentPanel.add(createCompetitionManagePanel(), "competitionManage");
+        mainContentPanel.add(createCompetitionEditPanel(), "competitionEdit");
         mainContentPanel.add(createResultManagePanel(), "resultManage");
         mainContentPanel.add(createStatisticsPanel(), "statistics");
         
@@ -233,8 +251,8 @@ public class AdminFrame extends JFrame {
         titleLabel.setHorizontalAlignment(SwingConstants.CENTER);
         panel.add(titleLabel, BorderLayout.NORTH);
         
-        // 创建竞赛表格
-        String[] columnNames = {"竞赛ID", "名称", "级别", "时间", "地点", "参赛人数", "状态"};
+        // 创建竞赛表格，添加操作列
+        String[] columnNames = {"竞赛ID", "名称", "级别", "时间", "地点", "参赛人数", "状态", "操作"};
         competitionTableModel = new DefaultTableModel(columnNames, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
@@ -251,13 +269,50 @@ public class AdminFrame extends JFrame {
                 comp.getTime(),
                 comp.getLocation(),
                 comp.getParticipantCount(),
-                comp.getStatus()
+                comp.getStatus(),
+                "编辑"
             });
         }
         
-        JTable table = new JTable(competitionTableModel);
+        final JTable table = new JTable(competitionTableModel);
+        
+        // 设置操作列宽度
+        table.getColumnModel().getColumn(7).setPreferredWidth(80);
         table.setAutoResizeMode(JTable.AUTO_RESIZE_ALL_COLUMNS);
         table.getTableHeader().setReorderingAllowed(false);
+        
+        // 设置操作列居中对齐
+        DefaultTableCellRenderer centerRenderer = new DefaultTableCellRenderer();
+        centerRenderer.setHorizontalAlignment(JLabel.CENTER);
+        table.getColumnModel().getColumn(7).setCellRenderer(centerRenderer);
+        
+        // 添加表格行点击事件
+        table.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                int column = table.getColumnModel().getColumnIndexAtX(evt.getX());
+                int row = evt.getY() / table.getRowHeight();
+                
+                if (row < table.getRowCount() && row >= 0 && column < table.getColumnCount() && column >= 0) {
+                    if (column == 7) { // 编辑按钮点击
+                        // 获取当前编辑的竞赛信息
+                        long compId = (long) competitionTableModel.getValueAt(row, 0);
+                        currentEditingCompetitionId = compId;
+                        
+                        // 查找竞赛对象
+                        for (AdminCompetitionData comp : competitions) {
+                            if (comp.getId().equals(compId)) {
+                                currentEditingCompetition = comp;
+                                break;
+                            }
+                        }
+                        
+                        // 切换到竞赛编辑页面
+                        cardLayout.show(mainContentPanel, "competitionEdit");
+                    }
+                }
+            }
+        });
         
         JScrollPane scrollPane = new JScrollPane(table);
         panel.add(scrollPane, BorderLayout.CENTER);
@@ -269,15 +324,6 @@ public class AdminFrame extends JFrame {
         JButton addButton = new JButton("添加竞赛");
         addButton.addActionListener(e -> showAddCompetitionDialog());
         buttonPanel.add(addButton);
-        
-        JButton editButton = new JButton("修改竞赛");
-        buttonPanel.add(editButton);
-        
-        JButton deleteButton = new JButton("删除竞赛");
-        buttonPanel.add(deleteButton);
-        
-        JButton statusButton = new JButton("修改状态");
-        buttonPanel.add(statusButton);
         
         panel.add(buttonPanel, BorderLayout.SOUTH);
         
@@ -297,40 +343,40 @@ public class AdminFrame extends JFrame {
         
         // 竞赛名称
         formPanel.add(new JLabel("竞赛名称: ", SwingConstants.RIGHT));
-        JTextField nameField = new JTextField();
+        final JTextField nameField = new JTextField();
         formPanel.add(nameField);
         
         // 竞赛级别
         formPanel.add(new JLabel("竞赛级别: ", SwingConstants.RIGHT));
         String[] levels = {"国家级", "省级", "校级", "院级"};
-        JComboBox<String> levelCombo = new JComboBox<>(levels);
+        final JComboBox<String> levelCombo = new JComboBox<>(levels);
         formPanel.add(levelCombo);
         
         // 竞赛时间
         formPanel.add(new JLabel("竞赛时间: ", SwingConstants.RIGHT));
-        JTextField timeField = new JTextField();
+        final JTextField timeField = new JTextField();
         timeField.setToolTipText("格式: 2024-12-30 14:00");
         formPanel.add(timeField);
         
         // 竞赛地点
         formPanel.add(new JLabel("竞赛地点: ", SwingConstants.RIGHT));
-        JTextField locationField = new JTextField();
+        final JTextField locationField = new JTextField();
         formPanel.add(locationField);
         
         // 参赛人数上限
         formPanel.add(new JLabel("参赛人数上限: ", SwingConstants.RIGHT));
-        JTextField participantCountField = new JTextField();
+        final JTextField participantCountField = new JTextField();
         formPanel.add(participantCountField);
         
         // 获奖人数
         formPanel.add(new JLabel("获奖人数: ", SwingConstants.RIGHT));
-        JTextField winnerCountField = new JTextField();
+        final JTextField winnerCountField = new JTextField();
         formPanel.add(winnerCountField);
         
         // 竞赛状态
         formPanel.add(new JLabel("竞赛状态: ", SwingConstants.RIGHT));
         String[] statuses = {"未开始", "进行中", "已结束"};
-        JComboBox<String> statusCombo = new JComboBox<>(statuses);
+        final JComboBox<String> statusCombo = new JComboBox<>(statuses);
         formPanel.add(statusCombo);
         
         dialog.add(formPanel, BorderLayout.CENTER);
@@ -359,10 +405,132 @@ public class AdminFrame extends JFrame {
             
             // 更新表格
             competitionTableModel.addRow(new Object[]{
-                newId, name, level, time, location, participantCount, status
+                newId, name, level, time, location, participantCount, status, "编辑"
             });
             
             JOptionPane.showMessageDialog(dialog, "竞赛添加成功！");
+            dialog.dispose();
+        });
+        
+        JButton cancelButton = new JButton("取消");
+        cancelButton.addActionListener(e -> dialog.dispose());
+        
+        buttonPanel.add(confirmButton);
+        buttonPanel.add(cancelButton);
+        dialog.add(buttonPanel, BorderLayout.SOUTH);
+        
+        dialog.setLocationRelativeTo(this);
+        dialog.setVisible(true);
+    }
+    
+    // 创建修改竞赛对话框
+    private void showEditCompetitionDialog(int selectedRow) {
+        JDialog dialog = new JDialog(this, "修改竞赛", true);
+        dialog.setSize(500, 400);
+        dialog.setLayout(new BorderLayout());
+        
+        // 获取选中的竞赛数据
+        long id = (long) competitionTableModel.getValueAt(selectedRow, 0);
+        String currentName = (String) competitionTableModel.getValueAt(selectedRow, 1);
+        String currentLevel = (String) competitionTableModel.getValueAt(selectedRow, 2);
+        String currentTime = (String) competitionTableModel.getValueAt(selectedRow, 3);
+        String currentLocation = (String) competitionTableModel.getValueAt(selectedRow, 4);
+        int currentParticipantCount = (int) competitionTableModel.getValueAt(selectedRow, 5);
+        String currentStatus = (String) competitionTableModel.getValueAt(selectedRow, 6);
+        
+        // 找到对应的竞赛对象
+        final AdminCompetitionData[] selectedCompArray = new AdminCompetitionData[1];
+        for (AdminCompetitionData comp : competitions) {
+            if (comp.getId() == id) {
+                selectedCompArray[0] = comp;
+                break;
+            }
+        }
+        
+        // 表单面板
+        JPanel formPanel = new JPanel();
+        formPanel.setLayout(new GridLayout(7, 2, 10, 10));
+        formPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+        
+        // 竞赛名称
+        formPanel.add(new JLabel("竞赛名称: ", SwingConstants.RIGHT));
+        final JTextField nameField = new JTextField(currentName);
+        formPanel.add(nameField);
+        
+        // 竞赛级别
+        formPanel.add(new JLabel("竞赛级别: ", SwingConstants.RIGHT));
+        String[] levels = {"国家级", "省级", "校级", "院级"};
+        final JComboBox<String> levelCombo = new JComboBox<>(levels);
+        levelCombo.setSelectedItem(currentLevel);
+        formPanel.add(levelCombo);
+        
+        // 竞赛时间
+        formPanel.add(new JLabel("竞赛时间: ", SwingConstants.RIGHT));
+        final JTextField timeField = new JTextField(currentTime);
+        timeField.setToolTipText("格式: 2024-12-30 14:00");
+        formPanel.add(timeField);
+        
+        // 竞赛地点
+        formPanel.add(new JLabel("竞赛地点: ", SwingConstants.RIGHT));
+        final JTextField locationField = new JTextField(currentLocation);
+        formPanel.add(locationField);
+        
+        // 参赛人数上限
+        formPanel.add(new JLabel("参赛人数上限: ", SwingConstants.RIGHT));
+        final JTextField participantCountField = new JTextField(String.valueOf(currentParticipantCount));
+        formPanel.add(participantCountField);
+        
+        // 获奖人数
+        int currentWinnerCount = selectedCompArray[0] != null ? selectedCompArray[0].getWinnerCount() : 0;
+        formPanel.add(new JLabel("获奖人数: ", SwingConstants.RIGHT));
+        final JTextField winnerCountField = new JTextField(String.valueOf(currentWinnerCount));
+        formPanel.add(winnerCountField);
+        
+        // 竞赛状态
+        formPanel.add(new JLabel("竞赛状态: ", SwingConstants.RIGHT));
+        String[] statuses = {"未开始", "进行中", "已结束"};
+        final JComboBox<String> statusCombo = new JComboBox<>(statuses);
+        statusCombo.setSelectedItem(currentStatus);
+        formPanel.add(statusCombo);
+        
+        dialog.add(formPanel, BorderLayout.CENTER);
+        
+        // 按钮面板
+        JPanel buttonPanel = new JPanel();
+        buttonPanel.setLayout(new FlowLayout(FlowLayout.CENTER, 10, 10));
+        
+        JButton confirmButton = new JButton("确定修改");
+        confirmButton.addActionListener(e -> {
+            // 收集表单数据
+            String name = nameField.getText();
+            String level = (String) levelCombo.getSelectedItem();
+            String time = timeField.getText();
+            String location = locationField.getText();
+            int participantCount = Integer.parseInt(participantCountField.getText());
+            int winnerCount = Integer.parseInt(winnerCountField.getText());
+            String status = (String) statusCombo.getSelectedItem();
+            
+            // 更新竞赛对象
+            AdminCompetitionData selectedComp = selectedCompArray[0];
+            if (selectedComp != null) {
+                selectedComp.setName(name);
+                selectedComp.setLevel(level);
+                selectedComp.setTime(time);
+                selectedComp.setLocation(location);
+                selectedComp.setParticipantCount(participantCount);
+                selectedComp.setWinnerCount(winnerCount);
+                selectedComp.setStatus(status);
+            }
+            
+            // 更新表格
+            competitionTableModel.setValueAt(name, selectedRow, 1);
+            competitionTableModel.setValueAt(level, selectedRow, 2);
+            competitionTableModel.setValueAt(time, selectedRow, 3);
+            competitionTableModel.setValueAt(location, selectedRow, 4);
+            competitionTableModel.setValueAt(participantCount, selectedRow, 5);
+            competitionTableModel.setValueAt(status, selectedRow, 6);
+            
+            JOptionPane.showMessageDialog(dialog, "竞赛修改成功！");
             dialog.dispose();
         });
         
@@ -411,6 +579,241 @@ public class AdminFrame extends JFrame {
         panel.add(buttonPanel, BorderLayout.SOUTH);
         
         return panel;
+    }
+    
+    // 创建竞赛编辑页面
+    private JPanel createCompetitionEditPanel() {
+        JPanel panel = new JPanel();
+        panel.setLayout(new BorderLayout());
+        panel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+
+        JLabel titleLabel = new JLabel("竞赛信息编辑");
+        titleLabel.setFont(new Font("宋体", Font.BOLD, 24));
+        titleLabel.setHorizontalAlignment(SwingConstants.CENTER);
+        panel.add(titleLabel, BorderLayout.NORTH);
+        
+        // 竞赛信息表单面板
+        JPanel formPanel = new JPanel();
+        formPanel.setLayout(new GridLayout(7, 2, 10, 10));
+        formPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+        
+        // 竞赛名称
+        formPanel.add(new JLabel("竞赛名称: ", SwingConstants.RIGHT));
+        JTextField nameField = new JTextField();
+        formPanel.add(nameField);
+        
+        // 竞赛级别
+        formPanel.add(new JLabel("竞赛级别: ", SwingConstants.RIGHT));
+        String[] levels = {"国家级", "省级", "校级", "院级"};
+        JComboBox<String> levelCombo = new JComboBox<>(levels);
+        formPanel.add(levelCombo);
+        
+        // 竞赛时间
+        formPanel.add(new JLabel("竞赛时间: ", SwingConstants.RIGHT));
+        JTextField timeField = new JTextField();
+        timeField.setToolTipText("格式: 2024-12-30 14:00");
+        formPanel.add(timeField);
+        
+        // 竞赛地点
+        formPanel.add(new JLabel("竞赛地点: ", SwingConstants.RIGHT));
+        JTextField locationField = new JTextField();
+        formPanel.add(locationField);
+        
+        // 参赛人数上限
+        formPanel.add(new JLabel("参赛人数上限: ", SwingConstants.RIGHT));
+        JTextField participantCountField = new JTextField();
+        formPanel.add(participantCountField);
+        
+        // 获奖人数
+        formPanel.add(new JLabel("获奖人数: ", SwingConstants.RIGHT));
+        JTextField winnerCountField = new JTextField();
+        formPanel.add(winnerCountField);
+        
+        // 竞赛状态
+        formPanel.add(new JLabel("竞赛状态: ", SwingConstants.RIGHT));
+        String[] statuses = {"未开始", "进行中", "已结束"};
+        JComboBox<String> statusCombo = new JComboBox<>(statuses);
+        formPanel.add(statusCombo);
+        
+        // 参赛人员管理面板
+        JPanel participantPanel = new JPanel();
+        participantPanel.setLayout(new BorderLayout());
+        participantPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+        
+        JLabel participantTitle = new JLabel("参赛人员管理");
+        participantTitle.setFont(new Font("宋体", Font.BOLD, 18));
+        participantTitle.setHorizontalAlignment(SwingConstants.CENTER);
+        participantPanel.add(participantTitle, BorderLayout.NORTH);
+        
+        // 参赛人员表格
+        String[] participantColumnNames = {"学生ID", "姓名", "学院", "专业", "状态", "操作"};
+        participantTableModel = new DefaultTableModel(participantColumnNames, 0) {
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                return column == 4 || column == 5;
+            }
+        };
+        
+        JTable participantTable = new JTable(participantTableModel);
+        participantTable.setAutoResizeMode(JTable.AUTO_RESIZE_ALL_COLUMNS);
+        
+        // 简化状态列设置，不使用复杂的编辑器
+        participantTable.getColumnModel().getColumn(4).setCellRenderer(new DefaultTableCellRenderer() {
+            @Override
+            public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
+                Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+                return c;
+            }
+        });
+        
+        JScrollPane participantScrollPane = new JScrollPane(participantTable);
+        participantPanel.add(participantScrollPane, BorderLayout.CENTER);
+        
+        // 参赛人员操作按钮
+        JPanel participantButtonPanel = new JPanel();
+        participantButtonPanel.setLayout(new FlowLayout(FlowLayout.CENTER, 10, 10));
+        
+        JButton addParticipantButton = new JButton("添加参赛人员");
+        addParticipantButton.addActionListener(e -> {
+            // 这里可以添加添加参赛人员的逻辑
+            JOptionPane.showMessageDialog(panel, "添加参赛人员功能待实现");
+        });
+        
+        JButton deleteParticipantButton = new JButton("删除选中参赛人员");
+        deleteParticipantButton.addActionListener(e -> {
+            int selectedRow = participantTable.getSelectedRow();
+            if (selectedRow >= 0) {
+                participantTableModel.removeRow(selectedRow);
+            } else {
+                JOptionPane.showMessageDialog(panel, "请先选择要删除的参赛人员");
+            }
+        });
+        
+        participantButtonPanel.add(addParticipantButton);
+        participantButtonPanel.add(deleteParticipantButton);
+        participantPanel.add(participantButtonPanel, BorderLayout.SOUTH);
+        
+        // 底部按钮面板
+        JPanel buttonPanel = new JPanel();
+        buttonPanel.setLayout(new FlowLayout(FlowLayout.CENTER, 10, 10));
+        
+        JButton saveButton = new JButton("保存修改");
+        saveButton.addActionListener(e -> {
+            // 收集表单数据
+            String name = nameField.getText();
+            String level = (String) levelCombo.getSelectedItem();
+            String time = timeField.getText();
+            String location = locationField.getText();
+            int participantCount = Integer.parseInt(participantCountField.getText());
+            int winnerCount = Integer.parseInt(winnerCountField.getText());
+            String status = (String) statusCombo.getSelectedItem();
+            
+            // 更新竞赛对象
+            if (currentEditingCompetition != null) {
+                currentEditingCompetition.setName(name);
+                currentEditingCompetition.setLevel(level);
+                currentEditingCompetition.setTime(time);
+                currentEditingCompetition.setLocation(location);
+                currentEditingCompetition.setParticipantCount(participantCount);
+                currentEditingCompetition.setWinnerCount(winnerCount);
+                currentEditingCompetition.setStatus(status);
+                
+                // 更新竞赛列表
+                for (int i = 0; i < competitions.size(); i++) {
+                    if (competitions.get(i).getId().equals(currentEditingCompetitionId)) {
+                        competitions.set(i, currentEditingCompetition);
+                        break;
+                    }
+                }
+                
+                // 刷新竞赛管理页面
+                refreshCompetitionManagePanel();
+                
+                JOptionPane.showMessageDialog(panel, "竞赛修改成功！");
+                
+                // 返回竞赛管理页面
+                cardLayout.show(mainContentPanel, "competitionManage");
+            }
+        });
+        
+        JButton backButton = new JButton("返回");
+        backButton.addActionListener(e -> {
+            cardLayout.show(mainContentPanel, "competitionManage");
+        });
+        
+        buttonPanel.add(saveButton);
+        buttonPanel.add(backButton);
+        
+        // 将表单和参赛人员面板垂直排列
+        JPanel centerPanel = new JPanel();
+        centerPanel.setLayout(new BoxLayout(centerPanel, BoxLayout.Y_AXIS));
+        centerPanel.add(formPanel);
+        centerPanel.add(Box.createVerticalStrut(20));
+        centerPanel.add(participantPanel);
+        centerPanel.add(Box.createVerticalStrut(20));
+        centerPanel.add(buttonPanel);
+        
+        panel.add(centerPanel, BorderLayout.CENTER);
+        
+        // 当页面显示时，加载当前编辑的竞赛信息
+        new Thread(() -> {
+            SwingUtilities.invokeLater(() -> {
+                if (currentEditingCompetition != null) {
+                    nameField.setText(currentEditingCompetition.getName());
+                    levelCombo.setSelectedItem(currentEditingCompetition.getLevel());
+                    timeField.setText(currentEditingCompetition.getTime());
+                    locationField.setText(currentEditingCompetition.getLocation());
+                    participantCountField.setText(String.valueOf(currentEditingCompetition.getParticipantCount()));
+                    winnerCountField.setText(String.valueOf(currentEditingCompetition.getWinnerCount()));
+                    statusCombo.setSelectedItem(currentEditingCompetition.getStatus());
+                    
+                    // 加载参赛人员数据
+                    loadParticipantsData(currentEditingCompetitionId);
+                }
+            });
+        }).start();
+        
+        return panel;
+    }
+    
+    // 加载参赛人员数据
+    private void loadParticipantsData(Long competitionId) {
+        // 清空表格
+        participantTableModel.setRowCount(0);
+        
+        // 加载对应竞赛的参赛人员
+        for (ParticipantData participant : participants) {
+            if (participant.getCompetitionId().equals(competitionId)) {
+                participantTableModel.addRow(new Object[]{
+                    participant.getStudentId(),
+                    participant.getStudentName(),
+                    participant.getCollege(),
+                    participant.getMajor(),
+                    participant.getStatus(),
+                    "删除"
+                });
+            }
+        }
+    }
+    
+    // 刷新竞赛管理页面
+    private void refreshCompetitionManagePanel() {
+        // 清空表格
+        competitionTableModel.setRowCount(0);
+        
+        // 重新填充数据
+        for (AdminCompetitionData comp : competitions) {
+            competitionTableModel.addRow(new Object[]{
+                comp.getId(),
+                comp.getName(),
+                comp.getLevel(),
+                comp.getTime(),
+                comp.getLocation(),
+                comp.getParticipantCount(),
+                comp.getStatus(),
+                "编辑"
+            });
+        }
     }
     
     // 创建数据统计页面
@@ -500,6 +903,7 @@ public class AdminFrame extends JFrame {
             this.status = status;
         }
         
+        // Getters
         public Long getId() { return id; }
         public String getName() { return name; }
         public String getLevel() { return level; }
@@ -508,5 +912,47 @@ public class AdminFrame extends JFrame {
         public int getParticipantCount() { return participantCount; }
         public int getWinnerCount() { return winnerCount; }
         public String getStatus() { return status; }
+        
+        // Setters
+        public void setName(String name) { this.name = name; }
+        public void setLevel(String level) { this.level = level; }
+        public void setTime(String time) { this.time = time; }
+        public void setLocation(String location) { this.location = location; }
+        public void setParticipantCount(int participantCount) { this.participantCount = participantCount; }
+        public void setWinnerCount(int winnerCount) { this.winnerCount = winnerCount; }
+        public void setStatus(String status) { this.status = status; }
+    }
+    
+    // 内部类：参赛人员数据
+    class ParticipantData {
+        private Long id;
+        private Long competitionId;
+        private String studentId;
+        private String studentName;
+        private String college;
+        private String major;
+        private String status;
+        
+        public ParticipantData(Long id, Long competitionId, String studentId, String studentName, String college, String major, String status) {
+            this.id = id;
+            this.competitionId = competitionId;
+            this.studentId = studentId;
+            this.studentName = studentName;
+            this.college = college;
+            this.major = major;
+            this.status = status;
+        }
+        
+        // Getters
+        public Long getId() { return id; }
+        public Long getCompetitionId() { return competitionId; }
+        public String getStudentId() { return studentId; }
+        public String getStudentName() { return studentName; }
+        public String getCollege() { return college; }
+        public String getMajor() { return major; }
+        public String getStatus() { return status; }
+        
+        // Setters
+        public void setStatus(String status) { this.status = status; }
     }
 }

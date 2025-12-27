@@ -1,7 +1,11 @@
 package com.example.studentcompetition;
 
-import javax.swing.*;
-import java.awt.*;
+import java.awt.BorderLayout;
+
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.SwingConstants;
+import javax.swing.SwingUtilities;
 
 public class SimpleTest {
     public static void main(String[] args) {

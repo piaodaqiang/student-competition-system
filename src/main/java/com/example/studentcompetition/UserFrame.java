@@ -160,9 +160,35 @@ public class UserFrame extends JFrame {
             card.add(infoPanel, BorderLayout.CENTER);
 
             JButton joinButton = new JButton("报名参赛");
+            CompetitionData currentComp = comp;
             joinButton.addActionListener(e -> {
+                // 检查是否已经报名
+                boolean alreadyJoined = false;
+                for (ParticipationData part : participations) {
+                    if (part.getCompetitionName().equals(currentComp.getName())) {
+                        alreadyJoined = true;
+                        break;
+                    }
+                }
+                
+                if (alreadyJoined) {
+                    JOptionPane.showMessageDialog(this, "您已经报名过该竞赛！");
+                    return;
+                }
+                
+                // 添加到参赛列表
+                ParticipationData newPart = new ParticipationData(
+                    (long) (participations.size() + 1),
+                    currentComp.getName(),
+                    currentComp.getLevel(),
+                    currentComp.getTime(),
+                    "已报名",
+                    currentComp.getLocation()
+                );
+                participations.add(newPart);
+                
                 JOptionPane.showMessageDialog(this, "报名成功！");
-                // 可以在这里添加参赛记录
+                // 这里可以添加刷新参赛列表的逻辑
             });
             card.add(joinButton, BorderLayout.SOUTH);
 
