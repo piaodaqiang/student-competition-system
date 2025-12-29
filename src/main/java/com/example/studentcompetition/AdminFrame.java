@@ -937,15 +937,38 @@ public class AdminFrame extends JFrame {
         
         JButton addParticipantButton = new JButton("添加参赛人员");
         addParticipantButton.addActionListener(e -> {
-            // 这里可以添加添加参赛人员的逻辑
-            JOptionPane.showMessageDialog(panel, "添加参赛人员功能待实现");
+            showAddParticipantDialog();
         });
         
         JButton deleteParticipantButton = new JButton("删除选中参赛人员");
         deleteParticipantButton.addActionListener(e -> {
             int selectedRow = participantTable.getSelectedRow();
             if (selectedRow >= 0) {
-                participantTableModel.removeRow(selectedRow);
+                String studentId = (String) participantTableModel.getValueAt(selectedRow, 0);
+                String studentName = (String) participantTableModel.getValueAt(selectedRow, 1);
+                
+                int confirm = JOptionPane.showConfirmDialog(panel, 
+                    "确定要删除参赛人员 " + studentName + " 吗？", 
+                    "确认删除", JOptionPane.YES_NO_OPTION);
+                if (confirm == JOptionPane.YES_OPTION) {
+                    // 从participants列表中删除
+                    for (int i = 0; i < participants.size(); i++) {
+                        ParticipantData p = participants.get(i);
+                        if (p.getCompetitionId().equals(currentEditingCompetitionId) && 
+                            p.getStudentId().equals(studentId)) {
+                            participants.remove(i);
+                            break;
+                        }
+                    }
+                    
+                    participantTableModel.removeRow(selectedRow);
+                    
+                    // 更新竞赛的参赛人数
+                    if (currentEditingCompetition != null) {
+                        int currentCount = currentEditingCompetition.getParticipantCount();
+                        currentEditingCompetition.setParticipantCount(Math.max(0, currentCount - 1));
+                    }
+                }
             } else {
                 JOptionPane.showMessageDialog(panel, "请先选择要删除的参赛人员");
             }
@@ -1056,6 +1079,194 @@ public class AdminFrame extends JFrame {
                 });
             }
         }
+    }
+
+    // 添加参赛人员对话框
+    private void showAddParticipantDialog() {
+        JDialog dialog = new JDialog(this, "添加参赛人员", true);
+        dialog.setSize(500, 400);
+        dialog.setLayout(new BorderLayout());
+        
+        // 表单面板
+        JPanel formPanel = new JPanel();
+        formPanel.setLayout(new GridLayout(6, 2, 10, 10));
+        formPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+        
+        // 学生ID
+        formPanel.add(new JLabel("学生ID: ", SwingConstants.RIGHT));
+        final JTextField studentIdField = new JTextField();
+        formPanel.add(studentIdField);
+        
+        // 姓名
+        formPanel.add(new JLabel("姓名: ", SwingConstants.RIGHT));
+        final JTextField studentNameField = new JTextField();
+        formPanel.add(studentNameField);
+        
+        // 学院
+        formPanel.add(new JLabel("学院: ", SwingConstants.RIGHT));
+        final JTextField collegeField = new JTextField();
+        formPanel.add(collegeField);
+        
+        // 专业
+        formPanel.add(new JLabel("专业: ", SwingConstants.RIGHT));
+        final JTextField majorField = new JTextField();
+        formPanel.add(majorField);
+        
+        // 状态
+        formPanel.add(new JLabel("状态: ", SwingConstants.RIGHT));
+        final JComboBox<String> statusCombo = new JComboBox<>(new String[]{"已确认", "待审核", "已取消"});
+        formPanel.add(statusCombo);
+        
+        // 可选参赛人员列表
+        formPanel.add(new JLabel("选择现有用户: ", SwingConstants.RIGHT));
+        JButton selectUserButton = new JButton("从用户列表选择");
+        selectUserButton.addActionListener(e -> {
+            showUserSelectionDialog(studentIdField, studentNameField, collegeField, majorField);
+        });
+        formPanel.add(selectUserButton);
+        
+        dialog.add(formPanel, BorderLayout.CENTER);
+        
+        // 按钮面板
+        JPanel buttonPanel = new JPanel();
+        buttonPanel.setLayout(new FlowLayout(FlowLayout.CENTER, 10, 10));
+        
+        JButton confirmButton = new JButton("确定添加");
+        confirmButton.addActionListener(e -> {
+            String studentId = studentIdField.getText().trim();
+            String studentName = studentNameField.getText().trim();
+            String college = collegeField.getText().trim();
+            String major = majorField.getText().trim();
+            String status = (String) statusCombo.getSelectedItem();
+            
+            // 验证输入
+            if (studentId.isEmpty() || studentName.isEmpty() || college.isEmpty() || major.isEmpty()) {
+                JOptionPane.showMessageDialog(dialog, "请填写所有必填字段！");
+                return;
+            }
+            
+            // 检查该学生是否已经参与当前竞赛
+            for (ParticipantData participant : participants) {
+                if (participant.getCompetitionId().equals(currentEditingCompetitionId) && 
+                    participant.getStudentId().equals(studentId)) {
+                    JOptionPane.showMessageDialog(dialog, "该学生已经参与此竞赛！");
+                    return;
+                }
+            }
+            
+            // 检查参赛人数是否已达上限
+            if (currentEditingCompetition != null && 
+                participants.stream().filter(p -> p.getCompetitionId().equals(currentEditingCompetitionId)).count() >= 
+                currentEditingCompetition.getParticipantCount()) {
+                JOptionPane.showMessageDialog(dialog, "参赛人数已达上限！");
+                return;
+            }
+            
+            // 添加新参赛人员
+            long newId = participants.size() + 1;
+            ParticipantData newParticipant = new ParticipantData(newId, currentEditingCompetitionId, 
+                studentId, studentName, college, major, status);
+            participants.add(newParticipant);
+            
+            // 更新表格
+            SwingUtilities.invokeLater(() -> {
+                participantTableModel.addRow(new Object[]{
+                    studentId, studentName, college, major, status, "删除"
+                });
+            });
+            
+            // 更新竞赛的参赛人数
+            if (currentEditingCompetition != null) {
+                long currentCount = participants.stream()
+                    .filter(p -> p.getCompetitionId().equals(currentEditingCompetitionId))
+                    .count();
+                currentEditingCompetition.setParticipantCount((int) currentCount);
+            }
+            
+            JOptionPane.showMessageDialog(dialog, "参赛人员添加成功！");
+            dialog.dispose();
+        });
+        
+        JButton cancelButton = new JButton("取消");
+        cancelButton.addActionListener(e -> dialog.dispose());
+        
+        buttonPanel.add(confirmButton);
+        buttonPanel.add(cancelButton);
+        dialog.add(buttonPanel, BorderLayout.SOUTH);
+        
+        dialog.setLocationRelativeTo(this);
+        dialog.setVisible(true);
+    }
+
+    // 用户选择对话框
+    private void showUserSelectionDialog(JTextField studentIdField, JTextField studentNameField, 
+                                       JTextField collegeField, JTextField majorField) {
+        JDialog dialog = new JDialog(this, "选择用户", true);
+        dialog.setSize(600, 400);
+        dialog.setLayout(new BorderLayout());
+        
+        JLabel titleLabel = new JLabel("选择要添加的用户");
+        titleLabel.setFont(new Font("宋体", Font.BOLD, 16));
+        titleLabel.setHorizontalAlignment(SwingConstants.CENTER);
+        titleLabel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        dialog.add(titleLabel, BorderLayout.NORTH);
+        
+        // 用户表格
+        String[] userColumnNames = {"用户ID", "用户名", "学生ID", "学院", "专业", "状态"};
+        DefaultTableModel userSelectTableModel = new DefaultTableModel(userColumnNames, 0) {
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                return false;
+            }
+        };
+        
+        // 填充用户数据
+        for (UserData user : users) {
+            userSelectTableModel.addRow(new Object[]{
+                user.getId(), user.getUsername(), user.getStudentId(), 
+                user.getCollege(), user.getMajor(), user.getStatus()
+            });
+        }
+        
+        JTable userTable = new JTable(userSelectTableModel);
+        JScrollPane userScrollPane = new JScrollPane(userTable);
+        userScrollPane.setBorder(BorderFactory.createEmptyBorder(10, 20, 10, 20));
+        dialog.add(userScrollPane, BorderLayout.CENTER);
+        
+        // 按钮面板
+        JPanel buttonPanel = new JPanel();
+        buttonPanel.setLayout(new FlowLayout(FlowLayout.CENTER, 10, 10));
+        
+        JButton confirmButton = new JButton("选择此用户");
+        confirmButton.addActionListener(e -> {
+            int selectedRow = userTable.getSelectedRow();
+            if (selectedRow >= 0) {
+                String studentId = (String) userSelectTableModel.getValueAt(selectedRow, 2);
+                String username = (String) userSelectTableModel.getValueAt(selectedRow, 1);
+                String college = (String) userSelectTableModel.getValueAt(selectedRow, 3);
+                String major = (String) userSelectTableModel.getValueAt(selectedRow, 4);
+                
+                // 填充表单
+                studentIdField.setText(studentId);
+                studentNameField.setText(username);
+                collegeField.setText(college);
+                majorField.setText(major);
+                
+                dialog.dispose();
+            } else {
+                JOptionPane.showMessageDialog(dialog, "请先选择一个用户！");
+            }
+        });
+        
+        JButton cancelButton = new JButton("取消");
+        cancelButton.addActionListener(e -> dialog.dispose());
+        
+        buttonPanel.add(confirmButton);
+        buttonPanel.add(cancelButton);
+        dialog.add(buttonPanel, BorderLayout.SOUTH);
+        
+        dialog.setLocationRelativeTo(this);
+        dialog.setVisible(true);
     }
     
     // 刷新竞赛管理页面
