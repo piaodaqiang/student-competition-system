@@ -20,6 +20,7 @@ import javax.swing.BoxLayout;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JDialog;
+import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
@@ -48,6 +49,9 @@ public class AdminFrame extends JFrame {
 
     private List<UserData> users;
     private DefaultTableModel userTableModel;
+    
+    private List<ResultData> results;
+    private DefaultTableModel resultTableModel;
 
     public AdminFrame() {
         initializeData();
@@ -69,6 +73,12 @@ public class AdminFrame extends JFrame {
         users.add(new UserData(1L, "user1", "password123", "202100001", "计算机学院", "计算机科学与技术", "正常"));
         users.add(new UserData(2L, "user2", "password123", "202100002", "电子学院", "电子工程", "正常"));
         users.add(new UserData(3L, "user3", "password123", "202100003", "机械学院", "机械工程", "待审核"));
+        
+        // 初始化成绩数据
+        results = new ArrayList<>();
+        results.add(new ResultData(1L, 2L, "202100001", "张三", "计算机学院", 95, "一等奖"));
+        results.add(new ResultData(2L, 2L, "202100002", "李四", "电子学院", 88, "二等奖"));
+        results.add(new ResultData(3L, 2L, "202100003", "王五", "机械学院", 82, "三等奖"));
     }
 
     private void createUI() {
@@ -818,16 +828,52 @@ public class AdminFrame extends JFrame {
         titleLabel.setHorizontalAlignment(SwingConstants.CENTER);
         panel.add(titleLabel, BorderLayout.NORTH);
         
+        // 筛选面板
+        JPanel filterPanel = new JPanel();
+        filterPanel.setLayout(new FlowLayout(FlowLayout.LEFT, 10, 10));
+        
+        JLabel filterLabel = new JLabel("筛选竞赛:");
+        filterPanel.add(filterLabel);
+        
+        String[] competitionNames = {"全部", "程序设计竞赛", "数学建模竞赛", "英语演讲比赛"};
+        final JComboBox<String> competitionFilter = new JComboBox<>(competitionNames);
+        filterPanel.add(competitionFilter);
+        
+        JButton filterButton = new JButton("应用筛选");
+        filterButton.addActionListener(e -> {
+            String selectedCompetition = (String) competitionFilter.getSelectedItem();
+            loadResultsData(selectedCompetition);
+        });
+        filterPanel.add(filterButton);
+        
+        panel.add(filterPanel, BorderLayout.NORTH);
+        
         // 成绩表格
-        String[] columnNames = {"ID", "竞赛名称", "学生ID", "学生姓名", "学院", "成绩", "排名"};
-        Object[][] data = {
-            {1, "数学建模竞赛", "202100001", "张三", "计算机学院", "95", "1"},
-            {2, "数学建模竞赛", "202100002", "李四", "电子学院", "88", "2"},
-            {3, "数学建模竞赛", "202100003", "王五", "机械学院", "82", "3"}
+        String[] columnNames = {"ID", "竞赛名称", "学生ID", "学生姓名", "学院", "成绩", "奖项", "操作"};
+        resultTableModel = new DefaultTableModel(columnNames, 0) {
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                return false;
+            }
         };
         
-        JTable table = new JTable(data, columnNames);
+        JTable table = new JTable(resultTableModel);
         table.setAutoResizeMode(JTable.AUTO_RESIZE_ALL_COLUMNS);
+        
+        // 设置操作列宽度
+        table.getColumnModel().getColumn(7).setPreferredWidth(80);
+        
+        // 添加表格点击事件
+        table.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override
+            public void mouseClicked(java.awt.event.MouseEvent e) {
+                int row = table.rowAtPoint(e.getPoint());
+                int col = table.columnAtPoint(e.getPoint());
+                if (col == 7) {
+                    showEditResultDialog(row);
+                }
+            }
+        });
         
         JScrollPane scrollPane = new JScrollPane(table);
         panel.add(scrollPane, BorderLayout.CENTER);
@@ -835,12 +881,394 @@ public class AdminFrame extends JFrame {
         // 底部按钮
         JPanel buttonPanel = new JPanel();
         buttonPanel.setLayout(new FlowLayout(FlowLayout.CENTER, 10, 10));
-        buttonPanel.add(new JButton("录入成绩"));
-        buttonPanel.add(new JButton("修改成绩"));
-        buttonPanel.add(new JButton("导出成绩"));
+        
+        JButton addButton = new JButton("录入成绩");
+        addButton.addActionListener(e -> showAddResultDialog());
+        buttonPanel.add(addButton);
+        
+        JButton editButton = new JButton("修改成绩");
+        editButton.addActionListener(e -> {
+            int selectedRow = table.getSelectedRow();
+            if (selectedRow >= 0) {
+                showEditResultDialog(selectedRow);
+            } else {
+                JOptionPane.showMessageDialog(panel, "请先选择要修改的成绩记录");
+            }
+        });
+        buttonPanel.add(editButton);
+        
+        JButton exportButton = new JButton("导出成绩");
+        exportButton.addActionListener(e -> exportResults());
+        buttonPanel.add(exportButton);
+        
         panel.add(buttonPanel, BorderLayout.SOUTH);
         
+        // 加载初始数据
+        loadResultsData("全部");
+        
         return panel;
+    }
+    
+    // 加载成绩数据
+    private void loadResultsData(String competitionName) {
+        resultTableModel.setRowCount(0);
+        
+        for (ResultData result : results) {
+            String competitionNameStr = getCompetitionName(result.getCompetitionId());
+            
+            if ("全部".equals(competitionName) || competitionNameStr.equals(competitionName)) {
+                resultTableModel.addRow(new Object[]{
+                    result.getId(),
+                    competitionNameStr,
+                    result.getStudentId(),
+                    result.getStudentName(),
+                    result.getCollege(),
+                    result.getScore(),
+                    result.getAward(),
+                    "编辑"
+                });
+            }
+        }
+    }
+    
+    // 获取竞赛名称
+    private String getCompetitionName(Long competitionId) {
+        for (AdminCompetitionData comp : competitions) {
+            if (comp.getId().equals(competitionId)) {
+                return comp.getName();
+            }
+        }
+        return "未知竞赛";
+    }
+    
+    // 显示录入成绩对话框
+    private void showAddResultDialog() {
+        JDialog dialog = new JDialog(this, "录入成绩", true);
+        dialog.setSize(500, 450);
+        dialog.setLayout(new BorderLayout());
+        
+        JPanel formPanel = new JPanel();
+        formPanel.setLayout(new GridLayout(8, 2, 10, 10));
+        formPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+        
+        // 竞赛选择
+        formPanel.add(new JLabel("竞赛名称: ", SwingConstants.RIGHT));
+        String[] competitionNames = new String[competitions.size()];
+        for (int i = 0; i < competitions.size(); i++) {
+            competitionNames[i] = competitions.get(i).getName();
+        }
+        final JComboBox<String> competitionCombo = new JComboBox<>(competitionNames);
+        formPanel.add(competitionCombo);
+        
+        // 学生ID
+        formPanel.add(new JLabel("学生ID: ", SwingConstants.RIGHT));
+        final JTextField studentIdField = new JTextField();
+        formPanel.add(studentIdField);
+        
+        // 学生姓名
+        formPanel.add(new JLabel("学生姓名: ", SwingConstants.RIGHT));
+        final JTextField studentNameField = new JTextField();
+        formPanel.add(studentNameField);
+        
+        // 学院
+        formPanel.add(new JLabel("学院: ", SwingConstants.RIGHT));
+        final JTextField collegeField = new JTextField();
+        formPanel.add(collegeField);
+        
+        // 成绩
+        formPanel.add(new JLabel("成绩: ", SwingConstants.RIGHT));
+        final JTextField scoreField = new JTextField();
+        scoreField.setToolTipText("请输入0-100之间的数字");
+        formPanel.add(scoreField);
+        
+        // 奖项
+        formPanel.add(new JLabel("奖项: ", SwingConstants.RIGHT));
+        String[] awards = {"一等奖", "二等奖", "三等奖", "优秀奖", "无"};
+        final JComboBox<String> awardCombo = new JComboBox<>(awards);
+        formPanel.add(awardCombo);
+        
+        // 从参赛人员选择
+        formPanel.add(new JLabel("从参赛人员选择: ", SwingConstants.RIGHT));
+        JButton selectParticipantButton = new JButton("选择参赛人员");
+        selectParticipantButton.addActionListener(e -> showParticipantSelectionDialog(
+            studentIdField, studentNameField, collegeField, competitionCombo));
+        formPanel.add(selectParticipantButton);
+        
+        dialog.add(formPanel, BorderLayout.CENTER);
+        
+        JPanel buttonPanel = new JPanel();
+        buttonPanel.setLayout(new FlowLayout(FlowLayout.CENTER, 10, 10));
+        
+        JButton confirmButton = new JButton("确定录入");
+        confirmButton.addActionListener(e -> {
+            String competitionName = (String) competitionCombo.getSelectedItem();
+            Long competitionId = getCompetitionId(competitionName);
+            String studentId = studentIdField.getText().trim();
+            String studentName = studentNameField.getText().trim();
+            String college = collegeField.getText().trim();
+            
+            int score;
+            try {
+                score = Integer.parseInt(scoreField.getText().trim());
+                if (score < 0 || score > 100) {
+                    JOptionPane.showMessageDialog(dialog, "成绩必须在0-100之间！");
+                    return;
+                }
+            } catch (NumberFormatException ex) {
+                JOptionPane.showMessageDialog(dialog, "请输入有效的数字成绩！");
+                return;
+            }
+            
+            String award = (String) awardCombo.getSelectedItem();
+            
+            if (studentId.isEmpty() || studentName.isEmpty() || college.isEmpty()) {
+                JOptionPane.showMessageDialog(dialog, "请填写所有必填字段！");
+                return;
+            }
+            
+            // 检查是否已经存在该学生的成绩记录
+            for (ResultData result : results) {
+                if (result.getCompetitionId().equals(competitionId) && 
+                    result.getStudentId().equals(studentId)) {
+                    JOptionPane.showMessageDialog(dialog, "该学生在此竞赛中已有成绩记录！");
+                    return;
+                }
+            }
+            
+            // 添加新成绩记录
+            long newId = results.size() + 1;
+            ResultData newResult = new ResultData(newId, competitionId, studentId, studentName, college, score, award);
+            results.add(newResult);
+            
+            // 更新表格
+            loadResultsData("全部");
+            
+            JOptionPane.showMessageDialog(dialog, "成绩录入成功！");
+            dialog.dispose();
+        });
+        
+        JButton cancelButton = new JButton("取消");
+        cancelButton.addActionListener(e -> dialog.dispose());
+        
+        buttonPanel.add(confirmButton);
+        buttonPanel.add(cancelButton);
+        dialog.add(buttonPanel, BorderLayout.SOUTH);
+        
+        dialog.setLocationRelativeTo(this);
+        dialog.setVisible(true);
+    }
+    
+    // 获取竞赛ID
+    private Long getCompetitionId(String competitionName) {
+        for (AdminCompetitionData comp : competitions) {
+            if (comp.getName().equals(competitionName)) {
+                return comp.getId();
+            }
+        }
+        return 1L;
+    }
+    
+    // 参赛人员选择对话框
+    private void showParticipantSelectionDialog(JTextField studentIdField, JTextField studentNameField, 
+                                               JTextField collegeField, JComboBox<String> competitionCombo) {
+        JDialog dialog = new JDialog(this, "选择参赛人员", true);
+        dialog.setSize(600, 400);
+        dialog.setLayout(new BorderLayout());
+        
+        JLabel titleLabel = new JLabel("选择要录入成绩的参赛人员");
+        titleLabel.setFont(new Font("宋体", Font.BOLD, 16));
+        titleLabel.setHorizontalAlignment(SwingConstants.CENTER);
+        titleLabel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        dialog.add(titleLabel, BorderLayout.NORTH);
+        
+        String[] columnNames = {"学生ID", "姓名", "学院", "所属竞赛"};
+        DefaultTableModel selectTableModel = new DefaultTableModel(columnNames, 0) {
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                return false;
+            }
+        };
+        
+        for (ParticipantData participant : participants) {
+            String competitionName = getCompetitionName(participant.getCompetitionId());
+            selectTableModel.addRow(new Object[]{
+                participant.getStudentId(),
+                participant.getStudentName(),
+                participant.getCollege(),
+                competitionName
+            });
+        }
+        
+        JTable selectTable = new JTable(selectTableModel);
+        JScrollPane scrollPane = new JScrollPane(selectTable);
+        scrollPane.setBorder(BorderFactory.createEmptyBorder(10, 20, 10, 20));
+        dialog.add(scrollPane, BorderLayout.CENTER);
+        
+        JPanel buttonPanel = new JPanel();
+        buttonPanel.setLayout(new FlowLayout(FlowLayout.CENTER, 10, 10));
+        
+        JButton confirmButton = new JButton("选择此人员");
+        confirmButton.addActionListener(e -> {
+            int selectedRow = selectTable.getSelectedRow();
+            if (selectedRow >= 0) {
+                String studentId = (String) selectTableModel.getValueAt(selectedRow, 0);
+                String studentName = (String) selectTableModel.getValueAt(selectedRow, 1);
+                String college = (String) selectTableModel.getValueAt(selectedRow, 2);
+                String competitionName = (String) selectTableModel.getValueAt(selectedRow, 3);
+                
+                studentIdField.setText(studentId);
+                studentNameField.setText(studentName);
+                collegeField.setText(college);
+                competitionCombo.setSelectedItem(competitionName);
+                
+                dialog.dispose();
+            } else {
+                JOptionPane.showMessageDialog(dialog, "请先选择一个参赛人员！");
+            }
+        });
+        
+        JButton cancelButton = new JButton("取消");
+        cancelButton.addActionListener(e -> dialog.dispose());
+        
+        buttonPanel.add(confirmButton);
+        buttonPanel.add(cancelButton);
+        dialog.add(buttonPanel, BorderLayout.SOUTH);
+        
+        dialog.setLocationRelativeTo(this);
+        dialog.setVisible(true);
+    }
+    
+    // 显示修改成绩对话框
+    private void showEditResultDialog(int selectedRow) {
+        JDialog dialog = new JDialog(this, "修改成绩", true);
+        dialog.setSize(500, 400);
+        dialog.setLayout(new BorderLayout());
+        
+        long id = (long) resultTableModel.getValueAt(selectedRow, 0);
+        String currentCompetitionName = (String) resultTableModel.getValueAt(selectedRow, 1);
+        String currentStudentId = (String) resultTableModel.getValueAt(selectedRow, 2);
+        String currentStudentName = (String) resultTableModel.getValueAt(selectedRow, 3);
+        String currentCollege = (String) resultTableModel.getValueAt(selectedRow, 4);
+        int currentScore = (int) resultTableModel.getValueAt(selectedRow, 5);
+        String currentAward = (String) resultTableModel.getValueAt(selectedRow, 6);
+        
+        final ResultData[] selectedResult = new ResultData[1];
+        for (ResultData result : results) {
+            if (result.getId().equals(id)) {
+                selectedResult[0] = result;
+                break;
+            }
+        }
+        
+        JPanel formPanel = new JPanel();
+        formPanel.setLayout(new GridLayout(7, 2, 10, 10));
+        formPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+        
+        formPanel.add(new JLabel("竞赛名称: ", SwingConstants.RIGHT));
+        formPanel.add(new JLabel(currentCompetitionName));
+        
+        formPanel.add(new JLabel("学生ID: ", SwingConstants.RIGHT));
+        formPanel.add(new JLabel(currentStudentId));
+        
+        formPanel.add(new JLabel("学生姓名: ", SwingConstants.RIGHT));
+        formPanel.add(new JLabel(currentStudentName));
+        
+        formPanel.add(new JLabel("学院: ", SwingConstants.RIGHT));
+        formPanel.add(new JLabel(currentCollege));
+        
+        formPanel.add(new JLabel("成绩: ", SwingConstants.RIGHT));
+        final JTextField scoreField = new JTextField(String.valueOf(currentScore));
+        formPanel.add(scoreField);
+        
+        formPanel.add(new JLabel("奖项: ", SwingConstants.RIGHT));
+        String[] awards = {"一等奖", "二等奖", "三等奖", "优秀奖", "无"};
+        final JComboBox<String> awardCombo = new JComboBox<>(awards);
+        awardCombo.setSelectedItem(currentAward);
+        formPanel.add(awardCombo);
+        
+        dialog.add(formPanel, BorderLayout.CENTER);
+        
+        JPanel buttonPanel = new JPanel();
+        buttonPanel.setLayout(new FlowLayout(FlowLayout.CENTER, 10, 10));
+        
+        JButton confirmButton = new JButton("确定修改");
+        confirmButton.addActionListener(e -> {
+            int newScore;
+            try {
+                newScore = Integer.parseInt(scoreField.getText().trim());
+                if (newScore < 0 || newScore > 100) {
+                    JOptionPane.showMessageDialog(dialog, "成绩必须在0-100之间！");
+                    return;
+                }
+            } catch (NumberFormatException ex) {
+                JOptionPane.showMessageDialog(dialog, "请输入有效的数字成绩！");
+                return;
+            }
+            
+            String newAward = (String) awardCombo.getSelectedItem();
+            
+            if (selectedResult[0] != null) {
+                selectedResult[0].setScore(newScore);
+                selectedResult[0].setAward(newAward);
+            }
+            
+            resultTableModel.setValueAt(newScore, selectedRow, 5);
+            resultTableModel.setValueAt(newAward, selectedRow, 6);
+            
+            JOptionPane.showMessageDialog(dialog, "成绩修改成功！");
+            dialog.dispose();
+        });
+        
+        JButton cancelButton = new JButton("取消");
+        cancelButton.addActionListener(e -> dialog.dispose());
+        
+        buttonPanel.add(confirmButton);
+        buttonPanel.add(cancelButton);
+        dialog.add(buttonPanel, BorderLayout.SOUTH);
+        
+        dialog.setLocationRelativeTo(this);
+        dialog.setVisible(true);
+    }
+    
+    // 导出成绩
+    private void exportResults() {
+        JFileChooser fileChooser = new JFileChooser();
+        fileChooser.setDialogTitle("导出成绩");
+        fileChooser.setFileFilter(new javax.swing.filechooser.FileNameExtensionFilter("CSV文件 (*.csv)", "csv"));
+        
+        int userSelection = fileChooser.showSaveDialog(this);
+        if (userSelection == JFileChooser.APPROVE_OPTION) {
+            java.io.File fileToSave = fileChooser.getSelectedFile();
+            String filePath = fileToSave.getAbsolutePath();
+            if (!filePath.endsWith(".csv")) {
+                fileToSave = new java.io.File(filePath + ".csv");
+            }
+            
+            try (java.io.PrintWriter writer = new java.io.PrintWriter(fileToSave, "UTF-8")) {
+                // 写入BOM，解决Excel打开CSV中文乱码问题
+                writer.print('\uFEFF');
+                
+                // 写入标题行
+                writer.println("ID,竞赛名称,学生ID,学生姓名,学院,成绩,奖项");
+                
+                // 写入数据行
+                for (ResultData result : results) {
+                    String competitionName = getCompetitionName(result.getCompetitionId());
+                    writer.printf("%d,%s,%s,%s,%s,%d,%s%n",
+                        result.getId(),
+                        competitionName,
+                        result.getStudentId(),
+                        result.getStudentName(),
+                        result.getCollege(),
+                        result.getScore(),
+                        result.getAward());
+                }
+                
+                JOptionPane.showMessageDialog(this, "成绩导出成功！\n文件保存至: " + fileToSave.getAbsolutePath());
+            } catch (java.io.IOException ex) {
+                JOptionPane.showMessageDialog(this, "导出失败: " + ex.getMessage());
+            }
+        }
     }
     
     // 创建竞赛编辑页面
@@ -1461,5 +1889,37 @@ public class AdminFrame extends JFrame {
         public void setCollege(String college) { this.college = college; }
         public void setMajor(String major) { this.major = major; }
         public void setStatus(String status) { this.status = status; }
+    }
+    
+    // 内部类：成绩数据
+    class ResultData {
+        private Long id;
+        private Long competitionId;
+        private String studentId;
+        private String studentName;
+        private String college;
+        private int score;
+        private String award;
+        
+        public ResultData(Long id, Long competitionId, String studentId, String studentName, String college, int score, String award) {
+            this.id = id;
+            this.competitionId = competitionId;
+            this.studentId = studentId;
+            this.studentName = studentName;
+            this.college = college;
+            this.score = score;
+            this.award = award;
+        }
+        
+        public Long getId() { return id; }
+        public Long getCompetitionId() { return competitionId; }
+        public String getStudentId() { return studentId; }
+        public String getStudentName() { return studentName; }
+        public String getCollege() { return college; }
+        public int getScore() { return score; }
+        public String getAward() { return award; }
+        
+        public void setScore(int score) { this.score = score; }
+        public void setAward(String award) { this.award = award; }
     }
 }
