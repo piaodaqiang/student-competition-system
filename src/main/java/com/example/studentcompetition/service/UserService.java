@@ -67,4 +67,16 @@ public class UserService {
                 .findFirst();
         return optionalUser.orElse(null);
     }
+
+    public User addUser(User user) {
+        if (findByUsername(user.getUsername()) != null) {
+            return null;
+        }
+        if (findByStudentId(user.getStudentId()) != null) {
+            return null;
+        }
+        user.setId((long) (users.size() + 1));
+        users.add(user);
+        return user;
+    }
 }

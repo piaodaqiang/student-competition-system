@@ -24,6 +24,7 @@ import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.JPasswordField;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.JTextField;
@@ -36,17 +37,17 @@ public class AdminFrame extends JFrame {
     private CardLayout cardLayout;
     private JPanel mainContentPanel;
     
-    // 竞赛数据
     private List<AdminCompetitionData> competitions;
     private DefaultTableModel competitionTableModel;
     
-    // 当前编辑的竞赛信息
     private Long currentEditingCompetitionId;
     private AdminCompetitionData currentEditingCompetition;
     
-    // 参赛人员数据
     private List<ParticipantData> participants;
     private DefaultTableModel participantTableModel;
+
+    private List<UserData> users;
+    private DefaultTableModel userTableModel;
 
     public AdminFrame() {
         initializeData();
@@ -54,17 +55,20 @@ public class AdminFrame extends JFrame {
     }
     
     private void initializeData() {
-        // 初始化竞赛数据
         competitions = new ArrayList<>();
         competitions.add(new AdminCompetitionData(1L, "程序设计竞赛", "国家级", "2024-12-30 14:00", "广州大学", 100, 20, "进行中"));
         competitions.add(new AdminCompetitionData(2L, "数学建模竞赛", "省级", "2024-11-20 09:00", "华南理工大学", 80, 15, "已结束"));
         competitions.add(new AdminCompetitionData(3L, "英语演讲比赛", "校级", "2024-10-15 10:00", "广东工业大学", 50, 10, "已结束"));
         
-        // 初始化参赛人员数据
         participants = new ArrayList<>();
         participants.add(new ParticipantData(1L, 1L, "202100001", "张三", "计算机学院", "计算机科学与技术", "已确认"));
         participants.add(new ParticipantData(2L, 1L, "202100002", "李四", "电子学院", "电子工程", "已确认"));
         participants.add(new ParticipantData(3L, 2L, "202100003", "王五", "机械学院", "机械工程", "已确认"));
+
+        users = new ArrayList<>();
+        users.add(new UserData(1L, "user1", "password123", "202100001", "计算机学院", "计算机科学与技术", "正常"));
+        users.add(new UserData(2L, "user2", "password123", "202100002", "电子学院", "电子工程", "正常"));
+        users.add(new UserData(3L, "user3", "password123", "202100003", "机械学院", "机械工程", "待审核"));
     }
 
     private void createUI() {
@@ -213,31 +217,289 @@ public class AdminFrame extends JFrame {
         titleLabel.setHorizontalAlignment(SwingConstants.CENTER);
         panel.add(titleLabel, BorderLayout.NORTH);
         
-        // 创建用户表格
         String[] columnNames = {"用户ID", "用户名", "学生ID", "学院", "专业", "状态"};
-        Object[][] data = {
-            {1, "user1", "202100001", "计算机学院", "计算机科学与技术", "正常"},
-            {2, "user2", "202100002", "电子学院", "电子工程", "正常"},
-            {3, "user3", "202100003", "机械学院", "机械工程", "待审核"}
+        userTableModel = new DefaultTableModel(columnNames, 0) {
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                return false;
+            }
         };
         
-        JTable table = new JTable(data, columnNames);
+        for (UserData user : users) {
+            userTableModel.addRow(new Object[]{
+                user.getId(),
+                user.getUsername(),
+                user.getStudentId(),
+                user.getCollege(),
+                user.getMajor(),
+                user.getStatus()
+            });
+        }
+        
+        JTable table = new JTable(userTableModel);
         table.setAutoResizeMode(JTable.AUTO_RESIZE_ALL_COLUMNS);
         table.getTableHeader().setReorderingAllowed(false);
         
         JScrollPane scrollPane = new JScrollPane(table);
         panel.add(scrollPane, BorderLayout.CENTER);
         
-        // 底部按钮面板
         JPanel buttonPanel = new JPanel();
         buttonPanel.setLayout(new FlowLayout(FlowLayout.CENTER, 10, 10));
-        buttonPanel.add(new JButton("添加用户"));
-        buttonPanel.add(new JButton("修改用户"));
-        buttonPanel.add(new JButton("删除用户"));
-        buttonPanel.add(new JButton("审核用户"));
+        
+        JButton addButton = new JButton("添加用户");
+        addButton.addActionListener(e -> showAddUserDialog());
+        buttonPanel.add(addButton);
+        
+        JButton editButton = new JButton("修改用户");
+        editButton.addActionListener(e -> {
+            int selectedRow = table.getSelectedRow();
+            if (selectedRow == -1) {
+                JOptionPane.showMessageDialog(this, "请先选择要修改的用户");
+                return;
+            }
+            showEditUserDialog(selectedRow);
+        });
+        buttonPanel.add(editButton);
+        
+        JButton deleteButton = new JButton("删除用户");
+        deleteButton.addActionListener(e -> {
+            int selectedRow = table.getSelectedRow();
+            if (selectedRow == -1) {
+                JOptionPane.showMessageDialog(this, "请先选择要删除的用户");
+                return;
+            }
+            int confirm = JOptionPane.showConfirmDialog(this, "确定要删除该用户吗？", "确认删除", JOptionPane.YES_NO_OPTION);
+            if (confirm == JOptionPane.YES_OPTION) {
+                long userId = (long) userTableModel.getValueAt(selectedRow, 0);
+                users.removeIf(user -> user.getId().equals(userId));
+                userTableModel.removeRow(selectedRow);
+                JOptionPane.showMessageDialog(this, "删除成功");
+            }
+        });
+        buttonPanel.add(deleteButton);
+        
+        JButton auditButton = new JButton("审核用户");
+        auditButton.addActionListener(e -> {
+            int selectedRow = table.getSelectedRow();
+            if (selectedRow == -1) {
+                JOptionPane.showMessageDialog(this, "请先选择要审核的用户");
+                return;
+            }
+            String currentStatus = (String) userTableModel.getValueAt(selectedRow, 5);
+            if ("正常".equals(currentStatus)) {
+                userTableModel.setValueAt("待审核", selectedRow, 5);
+                for (UserData user : users) {
+                    if (user.getId().equals(userTableModel.getValueAt(selectedRow, 0))) {
+                        user.setStatus("待审核");
+                    }
+                }
+            } else {
+                userTableModel.setValueAt("正常", selectedRow, 5);
+                for (UserData user : users) {
+                    if (user.getId().equals(userTableModel.getValueAt(selectedRow, 0))) {
+                        user.setStatus("正常");
+                    }
+                }
+            }
+            JOptionPane.showMessageDialog(this, "审核状态已切换");
+        });
+        buttonPanel.add(auditButton);
+        
         panel.add(buttonPanel, BorderLayout.SOUTH);
         
         return panel;
+    }
+    
+    private void showAddUserDialog() {
+        JDialog dialog = new JDialog(this, "添加用户", true);
+        dialog.setSize(450, 350);
+        dialog.setLayout(new BorderLayout());
+        
+        JPanel formPanel = new JPanel();
+        formPanel.setLayout(new GridLayout(6, 2, 10, 10));
+        formPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+        
+        formPanel.add(new JLabel("用户名: ", SwingConstants.RIGHT));
+        final JTextField usernameField = new JTextField();
+        formPanel.add(usernameField);
+        
+        formPanel.add(new JLabel("密码: ", SwingConstants.RIGHT));
+        final JPasswordField passwordField = new JPasswordField();
+        formPanel.add(passwordField);
+        
+        formPanel.add(new JLabel("学生ID: ", SwingConstants.RIGHT));
+        final JTextField studentIdField = new JTextField();
+        formPanel.add(studentIdField);
+        
+        formPanel.add(new JLabel("学院: ", SwingConstants.RIGHT));
+        final JTextField collegeField = new JTextField();
+        formPanel.add(collegeField);
+        
+        formPanel.add(new JLabel("专业: ", SwingConstants.RIGHT));
+        final JTextField majorField = new JTextField();
+        formPanel.add(majorField);
+        
+        formPanel.add(new JLabel("状态: ", SwingConstants.RIGHT));
+        String[] statuses = {"正常", "待审核"};
+        final JComboBox<String> statusCombo = new JComboBox<>(statuses);
+        formPanel.add(statusCombo);
+        
+        dialog.add(formPanel, BorderLayout.CENTER);
+        
+        JPanel buttonPanel = new JPanel();
+        buttonPanel.setLayout(new FlowLayout(FlowLayout.CENTER, 10, 10));
+        
+        JButton confirmButton = new JButton("确定添加");
+        confirmButton.addActionListener(e -> {
+            String username = usernameField.getText();
+            String password = new String(passwordField.getPassword());
+            String studentId = studentIdField.getText();
+            String college = collegeField.getText();
+            String major = majorField.getText();
+            String status = (String) statusCombo.getSelectedItem();
+            
+            if (username.isEmpty() || password.isEmpty() || studentId.isEmpty()) {
+                JOptionPane.showMessageDialog(dialog, "用户名、密码和学生ID不能为空");
+                return;
+            }
+            
+            for (UserData existingUser : users) {
+                if (existingUser.getUsername().equals(username)) {
+                    JOptionPane.showMessageDialog(dialog, "用户名已存在");
+                    return;
+                }
+                if (existingUser.getStudentId().equals(studentId)) {
+                    JOptionPane.showMessageDialog(dialog, "学生ID已存在");
+                    return;
+                }
+            }
+            
+            long newId = users.size() + 1;
+            UserData newUser = new UserData(newId, username, password, studentId, college, major, status);
+            users.add(newUser);
+            
+            userTableModel.addRow(new Object[]{
+                newId, username, studentId, college, major, status
+            });
+            
+            JOptionPane.showMessageDialog(dialog, "用户添加成功！");
+            dialog.dispose();
+        });
+        
+        JButton cancelButton = new JButton("取消");
+        cancelButton.addActionListener(e -> dialog.dispose());
+        
+        buttonPanel.add(confirmButton);
+        buttonPanel.add(cancelButton);
+        dialog.add(buttonPanel, BorderLayout.SOUTH);
+        
+        dialog.setLocationRelativeTo(this);
+        dialog.setVisible(true);
+    }
+    
+    private void showEditUserDialog(int selectedRow) {
+        JDialog dialog = new JDialog(this, "修改用户", true);
+        dialog.setSize(450, 350);
+        dialog.setLayout(new BorderLayout());
+        
+        long userId = (long) userTableModel.getValueAt(selectedRow, 0);
+        String currentUsername = (String) userTableModel.getValueAt(selectedRow, 1);
+        String currentStudentId = (String) userTableModel.getValueAt(selectedRow, 2);
+        String currentCollege = (String) userTableModel.getValueAt(selectedRow, 3);
+        String currentMajor = (String) userTableModel.getValueAt(selectedRow, 4);
+        String currentStatus = (String) userTableModel.getValueAt(selectedRow, 5);
+        
+        JPanel formPanel = new JPanel();
+        formPanel.setLayout(new GridLayout(6, 2, 10, 10));
+        formPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+        
+        formPanel.add(new JLabel("用户名: ", SwingConstants.RIGHT));
+        final JTextField usernameField = new JTextField(currentUsername);
+        formPanel.add(usernameField);
+        
+        formPanel.add(new JLabel("密码: ", SwingConstants.RIGHT));
+        final JPasswordField passwordField = new JPasswordField();
+        formPanel.add(passwordField);
+        
+        formPanel.add(new JLabel("学生ID: ", SwingConstants.RIGHT));
+        final JTextField studentIdField = new JTextField(currentStudentId);
+        formPanel.add(studentIdField);
+        
+        formPanel.add(new JLabel("学院: ", SwingConstants.RIGHT));
+        final JTextField collegeField = new JTextField(currentCollege);
+        formPanel.add(collegeField);
+        
+        formPanel.add(new JLabel("专业: ", SwingConstants.RIGHT));
+        final JTextField majorField = new JTextField(currentMajor);
+        formPanel.add(majorField);
+        
+        formPanel.add(new JLabel("状态: ", SwingConstants.RIGHT));
+        String[] statuses = {"正常", "待审核"};
+        final JComboBox<String> statusCombo = new JComboBox<>(statuses);
+        statusCombo.setSelectedItem(currentStatus);
+        formPanel.add(statusCombo);
+        
+        dialog.add(formPanel, BorderLayout.CENTER);
+        
+        JPanel buttonPanel = new JPanel();
+        buttonPanel.setLayout(new FlowLayout(FlowLayout.CENTER, 10, 10));
+        
+        JButton confirmButton = new JButton("保存修改");
+        confirmButton.addActionListener(e -> {
+            String username = usernameField.getText();
+            String password = new String(passwordField.getPassword());
+            String studentId = studentIdField.getText();
+            String college = collegeField.getText();
+            String major = majorField.getText();
+            String status = (String) statusCombo.getSelectedItem();
+            
+            if (username.isEmpty() || studentId.isEmpty()) {
+                JOptionPane.showMessageDialog(dialog, "用户名和学生ID不能为空");
+                return;
+            }
+            
+            for (UserData existingUser : users) {
+                if (existingUser.getId().equals(userId)) continue;
+                if (existingUser.getUsername().equals(username)) {
+                    JOptionPane.showMessageDialog(dialog, "用户名已存在");
+                    return;
+                }
+                if (existingUser.getStudentId().equals(studentId)) {
+                    JOptionPane.showMessageDialog(dialog, "学生ID已存在");
+                    return;
+                }
+            }
+            
+            userTableModel.setValueAt(username, selectedRow, 1);
+            userTableModel.setValueAt(studentId, selectedRow, 2);
+            userTableModel.setValueAt(college, selectedRow, 3);
+            userTableModel.setValueAt(major, selectedRow, 4);
+            userTableModel.setValueAt(status, selectedRow, 5);
+            
+            for (UserData user : users) {
+                if (user.getId().equals(userId)) {
+                    user.setUsername(username);
+                    user.setStudentId(studentId);
+                    user.setCollege(college);
+                    user.setMajor(major);
+                    user.setStatus(status);
+                    break;
+                }
+            }
+            
+            JOptionPane.showMessageDialog(dialog, "修改成功！");
+            dialog.dispose();
+        });
+        
+        JButton cancelButton = new JButton("取消");
+        cancelButton.addActionListener(e -> dialog.dispose());
+        
+        buttonPanel.add(confirmButton);
+        buttonPanel.add(cancelButton);
+        dialog.add(buttonPanel, BorderLayout.SOUTH);
+        
+        dialog.setLocationRelativeTo(this);
+        dialog.setVisible(true);
     }
     
     // 创建竞赛管理页面
@@ -953,6 +1215,40 @@ public class AdminFrame extends JFrame {
         public String getStatus() { return status; }
         
         // Setters
+        public void setStatus(String status) { this.status = status; }
+    }
+    
+    class UserData {
+        private Long id;
+        private String username;
+        private String password;
+        private String studentId;
+        private String college;
+        private String major;
+        private String status;
+        
+        public UserData(Long id, String username, String password, String studentId, String college, String major, String status) {
+            this.id = id;
+            this.username = username;
+            this.password = password;
+            this.studentId = studentId;
+            this.college = college;
+            this.major = major;
+            this.status = status;
+        }
+        
+        public Long getId() { return id; }
+        public String getUsername() { return username; }
+        public String getPassword() { return password; }
+        public String getStudentId() { return studentId; }
+        public String getCollege() { return college; }
+        public String getMajor() { return major; }
+        public String getStatus() { return status; }
+        
+        public void setUsername(String username) { this.username = username; }
+        public void setStudentId(String studentId) { this.studentId = studentId; }
+        public void setCollege(String college) { this.college = college; }
+        public void setMajor(String major) { this.major = major; }
         public void setStatus(String status) { this.status = status; }
     }
 }
