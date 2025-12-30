@@ -7,6 +7,8 @@ import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Font;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
 import java.awt.GridLayout;
 import java.awt.Insets;
 import java.awt.event.ActionEvent;
@@ -17,7 +19,6 @@ import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.JButton;
-import javax.swing.JComboBox;
 import javax.swing.JDialog;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
@@ -25,6 +26,7 @@ import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
+import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.SwingConstants;
 
@@ -110,14 +112,6 @@ public class UserFrame extends JFrame {
         navPanel.add(Box.createVerticalStrut(10));
         navPanel.add(personalInfoButton);
 
-        JButton addCompetitionButton = new JButton("添加竞赛");
-        addCompetitionButton.setAlignmentX(Component.CENTER_ALIGNMENT);
-        addCompetitionButton.setPreferredSize(new Dimension(120, 40));
-        addCompetitionButton.setMargin(new Insets(10, 20, 10, 20));
-        addCompetitionButton.addActionListener(e -> cardLayout.show(mainContentPanel, "addCompetition"));
-        navPanel.add(Box.createVerticalStrut(10));
-        navPanel.add(addCompetitionButton);
-
         add(navPanel, BorderLayout.WEST);
 
         // 创建主内容面板，使用卡片布局
@@ -128,7 +122,6 @@ public class UserFrame extends JFrame {
         mainContentPanel.add(createCompetitionListPanel(), "competitionList");
         mainContentPanel.add(createMyParticipationPanel(), "myParticipation");
         mainContentPanel.add(createPersonalInfoPanel(), "personalInfo");
-        mainContentPanel.add(createAddCompetitionPanel(), "addCompetition");
         
         add(mainContentPanel, BorderLayout.CENTER);
 
@@ -173,35 +166,7 @@ public class UserFrame extends JFrame {
 
             JButton joinButton = new JButton("报名参赛");
             CompetitionData currentComp = comp;
-            joinButton.addActionListener(e -> {
-                // 检查是否已经报名
-                boolean alreadyJoined = false;
-                for (ParticipationData part : participations) {
-                    if (part.getCompetitionName().equals(currentComp.getName())) {
-                        alreadyJoined = true;
-                        break;
-                    }
-                }
-                
-                if (alreadyJoined) {
-                    JOptionPane.showMessageDialog(this, "您已经报名过该竞赛！");
-                    return;
-                }
-                
-                // 添加到参赛列表
-                ParticipationData newPart = new ParticipationData(
-                    (long) (participations.size() + 1),
-                    currentComp.getName(),
-                    currentComp.getLevel(),
-                    currentComp.getTime(),
-                    "已报名",
-                    currentComp.getLocation()
-                );
-                participations.add(newPart);
-                
-                JOptionPane.showMessageDialog(this, "报名成功！");
-                // 这里可以添加刷新参赛列表的逻辑
-            });
+            joinButton.addActionListener(e -> showJoinCompetitionDialog(currentComp));
             card.add(joinButton, BorderLayout.SOUTH);
 
             competitionPanel.add(card);
@@ -218,6 +183,7 @@ public class UserFrame extends JFrame {
         JPanel panel = new JPanel();
         panel.setLayout(new BorderLayout());
         panel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+        panel.setName("myParticipation");
 
         JLabel titleLabel = new JLabel("我的参赛");
         titleLabel.setFont(new Font("宋体", Font.BOLD, 24));
@@ -245,6 +211,26 @@ public class UserFrame extends JFrame {
         panel.add(scrollPane, BorderLayout.CENTER);
         
         return panel;
+    }
+    
+    // 刷新"我的参赛"页面
+    private void refreshMyParticipationPanel() {
+        // 查找并移除旧的"我的参赛"页面
+        Component[] components = mainContentPanel.getComponents();
+        for (Component comp : components) {
+            if (comp instanceof JPanel && "myParticipation".equals(((JPanel) comp).getName())) {
+                mainContentPanel.remove(comp);
+                break;
+            }
+        }
+        
+        // 重新创建并添加页面
+        JPanel newPanel = createMyParticipationPanel();
+        mainContentPanel.add(newPanel, "myParticipation");
+        
+        // 重新布局
+        mainContentPanel.revalidate();
+        mainContentPanel.repaint();
     }
     
     // 创建个人信息页面
@@ -283,154 +269,158 @@ public class UserFrame extends JFrame {
         return panel;
     }
     
-    // 创建添加竞赛页面
-    private JPanel createAddCompetitionPanel() {
-        JPanel panel = new JPanel();
-        panel.setLayout(new BorderLayout());
-        panel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
-
-        JLabel titleLabel = new JLabel("添加竞赛");
-        titleLabel.setFont(new Font("宋体", Font.BOLD, 24));
-        titleLabel.setHorizontalAlignment(SwingConstants.CENTER);
-        panel.add(titleLabel, BorderLayout.NORTH);
-
-        JPanel buttonPanel = new JPanel();
-        buttonPanel.setLayout(new FlowLayout(FlowLayout.CENTER, 20, 20));
-        
-        JButton addButton = new JButton("创建新竞赛");
-        addButton.setPreferredSize(new Dimension(150, 40));
-        addButton.addActionListener(e -> showAddCompetitionDialog());
-        buttonPanel.add(addButton);
-        
-        panel.add(buttonPanel, BorderLayout.CENTER);
-        
-        return panel;
-    }
-
-    private void logout(ActionEvent e) {
-        this.dispose();
-        new M1();
-    }
-    
-    // 显示添加竞赛对话框
-    private void showAddCompetitionDialog() {
-        JDialog dialog = new JDialog(this, "创建新竞赛", true);
+    // 显示报名参赛对话框
+    private void showJoinCompetitionDialog(CompetitionData competition) {
+        JDialog dialog = new JDialog(this, "报名参赛 - " + competition.getName(), true);
         dialog.setSize(500, 450);
         dialog.setLayout(new BorderLayout());
         
         JPanel formPanel = new JPanel();
-        formPanel.setLayout(new GridLayout(7, 2, 10, 10));
+        formPanel.setLayout(new GridBagLayout());
         formPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
         
-        // 竞赛名称
-        formPanel.add(new JLabel("竞赛名称: ", SwingConstants.RIGHT));
-        final JTextField nameField = new JTextField();
-        formPanel.add(nameField);
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(5, 5, 5, 5);
+        gbc.anchor = GridBagConstraints.WEST;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.gridwidth = 1;
         
-        // 竞赛级别
-        formPanel.add(new JLabel("竞赛级别: ", SwingConstants.RIGHT));
-        String[] levels = {"校级", "省级", "国家级"};
-        final JComboBox<String> levelCombo = new JComboBox<>(levels);
-        formPanel.add(levelCombo);
+        // 竞赛信息（只读显示）
+        gbc.gridx = 0; gbc.gridy = 0;
+        formPanel.add(new JLabel("竞赛名称: "), gbc);
+        gbc.gridx = 1;
+        formPanel.add(new JLabel(competition.getName()), gbc);
         
-        // 竞赛时间
-        formPanel.add(new JLabel("竞赛时间: ", SwingConstants.RIGHT));
-        final JTextField timeField = new JTextField("2024-12-31 09:00");
-        formPanel.add(timeField);
+        gbc.gridx = 0; gbc.gridy = 1;
+        formPanel.add(new JLabel("竞赛级别: "), gbc);
+        gbc.gridx = 1;
+        formPanel.add(new JLabel(competition.getLevel()), gbc);
         
-        // 竞赛地点
-        formPanel.add(new JLabel("竞赛地点: ", SwingConstants.RIGHT));
-        final JTextField locationField = new JTextField();
-        formPanel.add(locationField);
+        gbc.gridx = 0; gbc.gridy = 2;
+        formPanel.add(new JLabel("竞赛时间: "), gbc);
+        gbc.gridx = 1;
+        formPanel.add(new JLabel(competition.getTime()), gbc);
         
-        // 参赛人数限制
-        formPanel.add(new JLabel("参赛人数限制: ", SwingConstants.RIGHT));
-        final JTextField participantCountField = new JTextField("50");
-        formPanel.add(participantCountField);
+        gbc.gridx = 0; gbc.gridy = 3;
+        formPanel.add(new JLabel("竞赛地点: "), gbc);
+        gbc.gridx = 1;
+        formPanel.add(new JLabel(competition.getLocation()), gbc);
         
-        // 获奖人数
-        formPanel.add(new JLabel("获奖人数: ", SwingConstants.RIGHT));
-        final JTextField winnerCountField = new JTextField("10");
-        formPanel.add(winnerCountField);
+        // 学生信息
+        gbc.gridx = 0; gbc.gridy = 4;
+        formPanel.add(new JLabel("学生ID: "), gbc);
+        gbc.gridx = 1;
+        final JTextField studentIdField = new JTextField("202100001");
+        formPanel.add(studentIdField, gbc);
         
-        // 竞赛描述
-        formPanel.add(new JLabel("竞赛描述: ", SwingConstants.RIGHT));
-        final JTextField descriptionField = new JTextField();
-        formPanel.add(descriptionField);
+        gbc.gridx = 0; gbc.gridy = 5;
+        formPanel.add(new JLabel("学生姓名: "), gbc);
+        gbc.gridx = 1;
+        final JTextField studentNameField = new JTextField(username);
+        formPanel.add(studentNameField, gbc);
+        
+        gbc.gridx = 0; gbc.gridy = 6;
+        formPanel.add(new JLabel("所属学院: "), gbc);
+        gbc.gridx = 1;
+        final JTextField collegeField = new JTextField("计算机学院");
+        formPanel.add(collegeField, gbc);
+        
+        gbc.gridx = 0; gbc.gridy = 7;
+        formPanel.add(new JLabel("联系电话: "), gbc);
+        gbc.gridx = 1;
+        final JTextField phoneField = new JTextField();
+        formPanel.add(phoneField, gbc);
+        
+        gbc.gridx = 0; gbc.gridy = 8;
+        formPanel.add(new JLabel("电子邮箱: "), gbc);
+        gbc.gridx = 1;
+        final JTextField emailField = new JTextField(username + "@example.com");
+        formPanel.add(emailField, gbc);
+        
+        gbc.gridx = 0; gbc.gridy = 9;
+        formPanel.add(new JLabel("参赛理由: "), gbc);
+        gbc.gridx = 1;
+        final JTextArea reasonArea = new JTextArea(3, 20);
+        reasonArea.setLineWrap(true);
+        reasonArea.setWrapStyleWord(true);
+        JScrollPane reasonScrollPane = new JScrollPane(reasonArea);
+        formPanel.add(reasonScrollPane, gbc);
         
         dialog.add(formPanel, BorderLayout.CENTER);
         
         JPanel buttonPanel = new JPanel();
         buttonPanel.setLayout(new FlowLayout(FlowLayout.CENTER, 10, 10));
         
-        JButton confirmButton = new JButton("创建竞赛");
+        JButton confirmButton = new JButton("确认报名");
         confirmButton.addActionListener(e -> {
-            String name = nameField.getText().trim();
-            String level = (String) levelCombo.getSelectedItem();
-            String time = timeField.getText().trim();
-            String location = locationField.getText().trim();
-            String participantCountStr = participantCountField.getText().trim();
-            String winnerCountStr = winnerCountField.getText().trim();
-            String description = descriptionField.getText().trim();
+            String studentId = studentIdField.getText().trim();
+            String studentName = studentNameField.getText().trim();
+            String college = collegeField.getText().trim();
+            String phone = phoneField.getText().trim();
+            String email = emailField.getText().trim();
+            String reason = reasonArea.getText().trim();
             
             // 验证输入
-            if (name.isEmpty()) {
-                JOptionPane.showMessageDialog(dialog, "竞赛名称不能为空");
+            if (studentId.isEmpty()) {
+                JOptionPane.showMessageDialog(dialog, "学生ID不能为空");
                 return;
             }
             
-            if (time.isEmpty()) {
-                JOptionPane.showMessageDialog(dialog, "竞赛时间不能为空");
+            if (studentName.isEmpty()) {
+                JOptionPane.showMessageDialog(dialog, "学生姓名不能为空");
                 return;
             }
             
-            if (location.isEmpty()) {
-                JOptionPane.showMessageDialog(dialog, "竞赛地点不能为空");
+            if (college.isEmpty()) {
+                JOptionPane.showMessageDialog(dialog, "所属学院不能为空");
                 return;
             }
             
-            int participantCount;
-            int winnerCount;
-            
-            try {
-                participantCount = Integer.parseInt(participantCountStr);
-                if (participantCount <= 0) {
-                    JOptionPane.showMessageDialog(dialog, "参赛人数限制必须是正整数");
-                    return;
-                }
-            } catch (NumberFormatException ex) {
-                JOptionPane.showMessageDialog(dialog, "参赛人数限制必须是数字");
+            if (phone.isEmpty()) {
+                JOptionPane.showMessageDialog(dialog, "联系电话不能为空");
                 return;
             }
             
-            try {
-                winnerCount = Integer.parseInt(winnerCountStr);
-                if (winnerCount <= 0 || winnerCount > participantCount) {
-                    JOptionPane.showMessageDialog(dialog, "获奖人数必须是正整数且不超过参赛人数");
-                    return;
-                }
-            } catch (NumberFormatException ex) {
-                JOptionPane.showMessageDialog(dialog, "获奖人数必须是数字");
+            if (email.isEmpty()) {
+                JOptionPane.showMessageDialog(dialog, "电子邮箱不能为空");
                 return;
             }
             
-            // 检查竞赛名称是否重复
-            for (CompetitionData existingComp : competitions) {
-                if (existingComp.getName().equals(name)) {
-                    JOptionPane.showMessageDialog(dialog, "竞赛名称已存在，请使用其他名称");
-                    return;
+            if (reason.isEmpty()) {
+                JOptionPane.showMessageDialog(dialog, "参赛理由不能为空");
+                return;
+            }
+            
+            // 检查是否已经报名
+            boolean alreadyJoined = false;
+            for (ParticipationData part : participations) {
+                if (part.getCompetitionName().equals(competition.getName())) {
+                    alreadyJoined = true;
+                    break;
                 }
             }
             
-            // 创建新竞赛
-            long newId = competitions.size() + 1;
-            CompetitionData newCompetition = new CompetitionData(
-                newId, name, level, time, location, participantCount, winnerCount
+            if (alreadyJoined) {
+                JOptionPane.showMessageDialog(dialog, "您已经报名过该竞赛！");
+                return;
+            }
+            
+            // 添加到参赛列表
+            ParticipationData newPart = new ParticipationData(
+                (long) (participations.size() + 1),
+                competition.getName(),
+                competition.getLevel(),
+                competition.getTime(),
+                "已报名",
+                competition.getLocation()
             );
-            competitions.add(newCompetition);
+            participations.add(newPart);
             
-            JOptionPane.showMessageDialog(dialog, "竞赛创建成功！");
+            JOptionPane.showMessageDialog(dialog, "报名成功！");
             dialog.dispose();
+            
+            // 刷新"我的参赛"页面
+            refreshMyParticipationPanel();
         });
         
         JButton cancelButton = new JButton("取消");
@@ -442,6 +432,11 @@ public class UserFrame extends JFrame {
         
         dialog.setLocationRelativeTo(this);
         dialog.setVisible(true);
+    }
+    
+    private void logout(ActionEvent e) {
+        this.dispose();
+        new M1();
     }
     
     // 内部类：竞赛数据
