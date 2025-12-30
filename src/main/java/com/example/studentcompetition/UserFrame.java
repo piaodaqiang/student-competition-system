@@ -25,7 +25,7 @@ import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
-import javax.swing.JTable;
+import javax.swing.JSeparator;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.SwingConstants;
@@ -190,27 +190,97 @@ public class UserFrame extends JFrame {
         titleLabel.setHorizontalAlignment(SwingConstants.CENTER);
         panel.add(titleLabel, BorderLayout.NORTH);
         
-        // 创建参赛列表表格
-        String[] columnNames = {"竞赛名称", "级别", "时间", "状态", "地点"};
-        Object[][] data = new Object[participations.size()][5];
+        // 创建参赛列表面板
+        JPanel listPanel = new JPanel();
+        listPanel.setLayout(new BoxLayout(listPanel, BoxLayout.Y_AXIS));
         
-        for (int i = 0; i < participations.size(); i++) {
-            ParticipationData part = participations.get(i);
-            data[i][0] = part.getCompetitionName();
-            data[i][1] = part.getLevel();
-            data[i][2] = part.getTime();
-            data[i][3] = part.getStatus();
-            data[i][4] = part.getLocation();
+        if (participations.isEmpty()) {
+            JLabel emptyLabel = new JLabel("暂无参赛记录");
+            emptyLabel.setFont(new Font("宋体", Font.PLAIN, 16));
+            emptyLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+            listPanel.add(Box.createVerticalGlue());
+            listPanel.add(emptyLabel);
+            listPanel.add(Box.createVerticalGlue());
+        } else {
+            for (ParticipationData part : participations) {
+                JPanel participationCard = createParticipationCard(part);
+                listPanel.add(participationCard);
+                listPanel.add(Box.createVerticalStrut(10));
+            }
         }
         
-        JTable table = new JTable(data, columnNames);
-        table.setAutoResizeMode(JTable.AUTO_RESIZE_ALL_COLUMNS);
-        table.getTableHeader().setReorderingAllowed(false);
-        
-        JScrollPane scrollPane = new JScrollPane(table);
+        JScrollPane scrollPane = new JScrollPane(listPanel);
+        scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
+        scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
         panel.add(scrollPane, BorderLayout.CENTER);
         
         return panel;
+    }
+    
+    // 创建参赛卡片
+    private JPanel createParticipationCard(ParticipationData part) {
+        JPanel card = new JPanel();
+        card.setLayout(new BorderLayout());
+        card.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(Color.GRAY, 1),
+            BorderFactory.createEmptyBorder(10, 10, 10, 10)
+        ));
+        card.setPreferredSize(new Dimension(500, 150));
+        
+        // 左侧信息区域
+        JPanel infoPanel = new JPanel();
+        infoPanel.setLayout(new GridLayout(3, 2, 10, 5));
+        infoPanel.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 20));
+        
+        infoPanel.add(new JLabel("竞赛名称: "));
+        infoPanel.add(new JLabel(part.getCompetitionName()));
+        infoPanel.add(new JLabel("级别: "));
+        infoPanel.add(new JLabel(part.getLevel()));
+        infoPanel.add(new JLabel("时间: "));
+        infoPanel.add(new JLabel(part.getTime()));
+        
+        card.add(infoPanel, BorderLayout.WEST);
+        
+        // 右侧状态和管理区域
+        JPanel rightPanel = new JPanel();
+        rightPanel.setLayout(new BorderLayout());
+        
+        // 状态显示
+        JPanel statusPanel = new JPanel();
+        statusPanel.setLayout(new FlowLayout(FlowLayout.CENTER));
+        JLabel statusLabel = new JLabel("状态: " + part.getStatus());
+        statusLabel.setFont(new Font("宋体", Font.BOLD, 14));
+        
+        // 根据状态设置不同颜色
+        if ("已报名".equals(part.getStatus())) {
+            statusLabel.setForeground(new Color(0, 128, 0)); // 绿色
+        } else if ("进行中".equals(part.getStatus())) {
+            statusLabel.setForeground(new Color(255, 140, 0)); // 橙色
+        } else if ("已完成".equals(part.getStatus())) {
+            statusLabel.setForeground(new Color(0, 0, 139)); // 深蓝色
+        }
+        statusPanel.add(statusLabel);
+        rightPanel.add(statusPanel, BorderLayout.NORTH);
+        
+        // 管理按钮面板
+        JPanel buttonPanel = new JPanel();
+        buttonPanel.setLayout(new FlowLayout(FlowLayout.CENTER));
+        
+        JButton detailButton = new JButton("查看详情");
+        detailButton.addActionListener(e -> showParticipationDetail(part));
+        buttonPanel.add(detailButton);
+        
+        if ("已报名".equals(part.getStatus())) {
+            JButton cancelButton = new JButton("取消报名");
+            cancelButton.setForeground(Color.RED);
+            cancelButton.addActionListener(e -> cancelParticipation(part));
+            buttonPanel.add(cancelButton);
+        }
+        
+        rightPanel.add(buttonPanel, BorderLayout.CENTER);
+        card.add(rightPanel, BorderLayout.EAST);
+        
+        return card;
     }
     
     // 刷新"我的参赛"页面
@@ -406,13 +476,21 @@ public class UserFrame extends JFrame {
             }
             
             // 添加到参赛列表
+            String currentTime = java.time.LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"));
+            String studentInfo = studentName + " (ID: " + studentId + ")";
+            String contactInfo = phone + " | " + email;
+            
             ParticipationData newPart = new ParticipationData(
                 (long) (participations.size() + 1),
                 competition.getName(),
                 competition.getLevel(),
                 competition.getTime(),
                 "已报名",
-                competition.getLocation()
+                competition.getLocation(),
+                currentTime,
+                studentInfo,
+                contactInfo,
+                reason
             );
             participations.add(newPart);
             
@@ -474,6 +552,10 @@ public class UserFrame extends JFrame {
         private String time;
         private String status;
         private String location;
+        private String registerTime;
+        private String studentInfo;
+        private String contactInfo;
+        private String reason;
         
         public ParticipationData(Long id, String competitionName, String level, String time, String status, String location) {
             this.id = id;
@@ -482,6 +564,24 @@ public class UserFrame extends JFrame {
             this.time = time;
             this.status = status;
             this.location = location;
+            this.registerTime = "已报名";
+            this.studentInfo = "";
+            this.contactInfo = "";
+            this.reason = "";
+        }
+        
+        public ParticipationData(Long id, String competitionName, String level, String time, String status, 
+                               String location, String registerTime, String studentInfo, String contactInfo, String reason) {
+            this.id = id;
+            this.competitionName = competitionName;
+            this.level = level;
+            this.time = time;
+            this.status = status;
+            this.location = location;
+            this.registerTime = registerTime;
+            this.studentInfo = studentInfo;
+            this.contactInfo = contactInfo;
+            this.reason = reason;
         }
         
         public String getCompetitionName() { return competitionName; }
@@ -489,5 +589,116 @@ public class UserFrame extends JFrame {
         public String getTime() { return time; }
         public String getStatus() { return status; }
         public String getLocation() { return location; }
+        public String getRegisterTime() { return registerTime; }
+        public String getStudentInfo() { return studentInfo; }
+        public String getContactInfo() { return contactInfo; }
+        public String getReason() { return reason; }
+        public Long getId() { return id; }
+        
+        public void setStatus(String status) { this.status = status; }
+    }
+    
+    // 查看参赛详情
+    private void showParticipationDetail(ParticipationData part) {
+        JDialog dialog = new JDialog(this, "参赛详情", true);
+        dialog.setSize(500, 400);
+        dialog.setLocationRelativeTo(this);
+        
+        JPanel contentPanel = new JPanel();
+        contentPanel.setLayout(new BorderLayout());
+        contentPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+        
+        // 创建详情内容面板
+        JPanel detailPanel = new JPanel();
+        detailPanel.setLayout(new GridBagLayout());
+        
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(5, 5, 5, 5);
+        gbc.anchor = GridBagConstraints.WEST;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        
+        // 竞赛信息
+        gbc.gridx = 0; gbc.gridy = 0;
+        detailPanel.add(new JLabel("竞赛名称:"), gbc);
+        gbc.gridx = 1;
+        detailPanel.add(new JLabel(part.getCompetitionName()), gbc);
+        
+        gbc.gridx = 0; gbc.gridy = 1;
+        detailPanel.add(new JLabel("竞赛级别:"), gbc);
+        gbc.gridx = 1;
+        detailPanel.add(new JLabel(part.getLevel()), gbc);
+        
+        gbc.gridx = 0; gbc.gridy = 2;
+        detailPanel.add(new JLabel("竞赛时间:"), gbc);
+        gbc.gridx = 1;
+        detailPanel.add(new JLabel(part.getTime()), gbc);
+        
+        gbc.gridx = 0; gbc.gridy = 3;
+        detailPanel.add(new JLabel("竞赛地点:"), gbc);
+        gbc.gridx = 1;
+        detailPanel.add(new JLabel(part.getLocation()), gbc);
+        
+        gbc.gridx = 0; gbc.gridy = 4;
+        detailPanel.add(new JLabel("参赛状态:"), gbc);
+        gbc.gridx = 1;
+        JLabel statusLabel = new JLabel(part.getStatus());
+        if ("已报名".equals(part.getStatus())) {
+            statusLabel.setForeground(new Color(0, 128, 0));
+        } else if ("进行中".equals(part.getStatus())) {
+            statusLabel.setForeground(new Color(255, 140, 0));
+        } else if ("已完成".equals(part.getStatus())) {
+            statusLabel.setForeground(new Color(0, 0, 139));
+        }
+        detailPanel.add(statusLabel, gbc);
+        
+        // 添加分隔线
+        gbc.gridx = 0; gbc.gridy = 5;
+        gbc.gridwidth = 2;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        detailPanel.add(new JSeparator(), gbc);
+        
+        // 报名信息
+        gbc.gridx = 0; gbc.gridy = 6;
+        gbc.gridwidth = 1;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        detailPanel.add(new JLabel("报名时间:"), gbc);
+        gbc.gridx = 1;
+        detailPanel.add(new JLabel(part.getRegisterTime()), gbc);
+        
+        contentPanel.add(detailPanel, BorderLayout.CENTER);
+        
+        // 按钮面板
+        JPanel buttonPanel = new JPanel();
+        buttonPanel.setLayout(new FlowLayout());
+        
+        JButton closeButton = new JButton("关闭");
+        closeButton.addActionListener(e -> dialog.dispose());
+        buttonPanel.add(closeButton);
+        
+        contentPanel.add(buttonPanel, BorderLayout.SOUTH);
+        dialog.add(contentPanel);
+        
+        dialog.setVisible(true);
+    }
+    
+    // 取消报名
+    private void cancelParticipation(ParticipationData part) {
+        int result = JOptionPane.showConfirmDialog(
+            this,
+            "确定要取消报名 '" + part.getCompetitionName() + "' 吗？",
+            "确认取消报名",
+            JOptionPane.YES_NO_OPTION,
+            JOptionPane.QUESTION_MESSAGE
+        );
+        
+        if (result == JOptionPane.YES_OPTION) {
+            // 从参赛列表中移除
+            participations.remove(part);
+            
+            JOptionPane.showMessageDialog(this, "已取消报名！");
+            
+            // 刷新页面
+            refreshMyParticipationPanel();
+        }
     }
 }
