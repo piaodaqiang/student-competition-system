@@ -24,6 +24,7 @@ import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.JPasswordField;
 import javax.swing.JScrollPane;
 import javax.swing.JSeparator;
 import javax.swing.JTextArea;
@@ -38,10 +39,19 @@ public class UserFrame extends JFrame {
     // 竞赛数据
     private List<CompetitionData> competitions;
     private List<ParticipationData> participations;
+    
+    // 个人信息数据
+    private String studentName;
+    private String studentId;
+    private String college;
+    private String major;
+    private String email;
+    private String phone;
 
     public UserFrame(String username) {
         this.username = username;
         initializeData();
+        initializePersonalInfo();
         createUI();
     }
     
@@ -59,6 +69,16 @@ public class UserFrame extends JFrame {
         participations = new ArrayList<>();
         participations.add(new ParticipationData(1L, "程序设计竞赛", "国家级", "2024-12-30 14:00", "已报名", "广州大学"));
         participations.add(new ParticipationData(2L, "数学建模竞赛", "省级", "2024-11-20 09:00", "已完成", "华南理工大学"));
+    }
+    
+    private void initializePersonalInfo() {
+        // 初始化个人信息数据
+        studentName = "张三";
+        studentId = "202100001";
+        college = "计算机学院";
+        major = "计算机科学与技术";
+        email = username + "@example.com";
+        phone = "138****8888";
     }
 
     private void createUI() {
@@ -308,33 +328,150 @@ public class UserFrame extends JFrame {
         JPanel panel = new JPanel();
         panel.setLayout(new BorderLayout());
         panel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+        panel.setName("personalInfo");
 
         JLabel titleLabel = new JLabel("个人信息");
         titleLabel.setFont(new Font("宋体", Font.BOLD, 24));
         titleLabel.setHorizontalAlignment(SwingConstants.CENTER);
         panel.add(titleLabel, BorderLayout.NORTH);
         
-        // 创建信息表单
+        // 创建信息显示表单
         JPanel infoPanel = new JPanel();
-        infoPanel.setLayout(new GridLayout(5, 2, 20, 20));
+        infoPanel.setLayout(new GridBagLayout());
         infoPanel.setBorder(BorderFactory.createEmptyBorder(30, 50, 30, 50));
         
-        infoPanel.add(new JLabel("用户名: ", SwingConstants.RIGHT));
-        infoPanel.add(new JLabel(username));
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(8, 8, 8, 8);
+        gbc.anchor = GridBagConstraints.WEST;
         
-        infoPanel.add(new JLabel("学生ID: ", SwingConstants.RIGHT));
-        infoPanel.add(new JLabel("202100001"));
+        // 标签字体
+        Font labelFont = new Font("宋体", Font.PLAIN, 14);
+        Font dataFont = new Font("宋体", Font.PLAIN, 14);
         
-        infoPanel.add(new JLabel("学院: ", SwingConstants.RIGHT));
-        infoPanel.add(new JLabel("计算机学院"));
+        // 用户名
+        gbc.gridx = 0; gbc.gridy = 0;
+        gbc.fill = GridBagConstraints.NONE;
+        gbc.weightx = 0;
+        JLabel usernameLabel = new JLabel("用户名: ", SwingConstants.RIGHT);
+        usernameLabel.setFont(labelFont);
+        infoPanel.add(usernameLabel, gbc);
         
-        infoPanel.add(new JLabel("专业: ", SwingConstants.RIGHT));
-        infoPanel.add(new JLabel("计算机科学与技术"));
+        gbc.gridx = 1; gbc.gridy = 0;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.weightx = 1.0;
+        JLabel usernameValue = new JLabel(username);
+        usernameValue.setFont(dataFont);
+        infoPanel.add(usernameValue, gbc);
         
-        infoPanel.add(new JLabel("邮箱: ", SwingConstants.RIGHT));
-        infoPanel.add(new JLabel(username + "@example.com"));
+        // 姓名
+        gbc.gridx = 0; gbc.gridy = 1;
+        gbc.fill = GridBagConstraints.NONE;
+        gbc.weightx = 0;
+        JLabel nameLabel = new JLabel("姓名: ", SwingConstants.RIGHT);
+        nameLabel.setFont(labelFont);
+        infoPanel.add(nameLabel, gbc);
+        
+        gbc.gridx = 1; gbc.gridy = 1;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.weightx = 1.0;
+        JLabel nameValue = new JLabel(studentName);
+        nameValue.setFont(dataFont);
+        infoPanel.add(nameValue, gbc);
+        
+        // 学生ID
+        gbc.gridx = 0; gbc.gridy = 2;
+        gbc.fill = GridBagConstraints.NONE;
+        gbc.weightx = 0;
+        JLabel studentIdLabel = new JLabel("学生ID: ", SwingConstants.RIGHT);
+        studentIdLabel.setFont(labelFont);
+        infoPanel.add(studentIdLabel, gbc);
+        
+        gbc.gridx = 1; gbc.gridy = 2;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.weightx = 1.0;
+        JLabel studentIdValue = new JLabel(studentId);
+        studentIdValue.setFont(dataFont);
+        infoPanel.add(studentIdValue, gbc);
+        
+        // 学院
+        gbc.gridx = 0; gbc.gridy = 3;
+        gbc.fill = GridBagConstraints.NONE;
+        gbc.weightx = 0;
+        JLabel collegeLabel = new JLabel("学院: ", SwingConstants.RIGHT);
+        collegeLabel.setFont(labelFont);
+        infoPanel.add(collegeLabel, gbc);
+        
+        gbc.gridx = 1; gbc.gridy = 3;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.weightx = 1.0;
+        JLabel collegeValue = new JLabel(college);
+        collegeValue.setFont(dataFont);
+        infoPanel.add(collegeValue, gbc);
+        
+        // 专业
+        gbc.gridx = 0; gbc.gridy = 4;
+        gbc.fill = GridBagConstraints.NONE;
+        gbc.weightx = 0;
+        JLabel majorLabel = new JLabel("专业: ", SwingConstants.RIGHT);
+        majorLabel.setFont(labelFont);
+        infoPanel.add(majorLabel, gbc);
+        
+        gbc.gridx = 1; gbc.gridy = 4;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.weightx = 1.0;
+        JLabel majorValue = new JLabel(major);
+        majorValue.setFont(dataFont);
+        infoPanel.add(majorValue, gbc);
+        
+        // 邮箱
+        gbc.gridx = 0; gbc.gridy = 5;
+        gbc.fill = GridBagConstraints.NONE;
+        gbc.weightx = 0;
+        JLabel emailLabel = new JLabel("邮箱: ", SwingConstants.RIGHT);
+        emailLabel.setFont(labelFont);
+        infoPanel.add(emailLabel, gbc);
+        
+        gbc.gridx = 1; gbc.gridy = 5;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.weightx = 1.0;
+        JLabel emailValue = new JLabel(email);
+        emailValue.setFont(dataFont);
+        infoPanel.add(emailValue, gbc);
+        
+        // 电话
+        gbc.gridx = 0; gbc.gridy = 6;
+        gbc.fill = GridBagConstraints.NONE;
+        gbc.weightx = 0;
+        JLabel phoneLabel = new JLabel("电话: ", SwingConstants.RIGHT);
+        phoneLabel.setFont(labelFont);
+        infoPanel.add(phoneLabel, gbc);
+        
+        gbc.gridx = 1; gbc.gridy = 6;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.weightx = 1.0;
+        JLabel phoneValue = new JLabel(phone);
+        phoneValue.setFont(dataFont);
+        infoPanel.add(phoneValue, gbc);
         
         panel.add(infoPanel, BorderLayout.CENTER);
+        
+        // 添加底部管理按钮面板
+        JPanel buttonPanel = new JPanel();
+        buttonPanel.setLayout(new FlowLayout(FlowLayout.CENTER, 20, 20));
+        
+        JButton editButton = new JButton("编辑信息");
+        editButton.setFont(new Font("宋体", Font.PLAIN, 14));
+        editButton.setPreferredSize(new Dimension(120, 35));
+        editButton.addActionListener(e -> showEditPersonalInfoDialog());
+        buttonPanel.add(editButton);
+        
+        JButton changePasswordButton = new JButton("修改密码");
+        changePasswordButton.setFont(new Font("宋体", Font.PLAIN, 14));
+        changePasswordButton.setPreferredSize(new Dimension(120, 35));
+        changePasswordButton.addActionListener(e -> showChangePasswordDialog());
+        buttonPanel.add(changePasswordButton);
+        
+        panel.add(buttonPanel, BorderLayout.SOUTH);
         
         return panel;
     }
@@ -700,5 +837,280 @@ public class UserFrame extends JFrame {
             // 刷新页面
             refreshMyParticipationPanel();
         }
+    }
+    
+    // 编辑个人信息对话框
+    private void showEditPersonalInfoDialog() {
+        JDialog dialog = new JDialog(this, "编辑个人信息", true);
+        dialog.setSize(500, 400);
+        dialog.setLocationRelativeTo(this);
+        
+        JPanel contentPanel = new JPanel();
+        contentPanel.setLayout(new BorderLayout());
+        contentPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+        
+        // 创建编辑表单
+        JPanel formPanel = new JPanel();
+        formPanel.setLayout(new GridBagLayout());
+        formPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(8, 8, 8, 8);
+        gbc.anchor = GridBagConstraints.WEST;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.gridwidth = 1;
+        
+        // 标签字体
+        Font labelFont = new Font("宋体", Font.PLAIN, 14);
+        Font fieldFont = new Font("宋体", Font.PLAIN, 14);
+        
+        // 姓名
+        gbc.gridx = 0; gbc.gridy = 0;
+        gbc.fill = GridBagConstraints.NONE;
+        gbc.weightx = 0;
+        JLabel nameLabel = new JLabel("姓名: ", SwingConstants.RIGHT);
+        nameLabel.setFont(labelFont);
+        formPanel.add(nameLabel, gbc);
+        
+        gbc.gridx = 1; gbc.gridy = 0;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.weightx = 1.0;
+        final JTextField nameField = new JTextField(studentName);
+        nameField.setFont(fieldFont);
+        formPanel.add(nameField, gbc);
+        
+        // 学生ID
+        gbc.gridx = 0; gbc.gridy = 1;
+        gbc.fill = GridBagConstraints.NONE;
+        gbc.weightx = 0;
+        JLabel studentIdLabel = new JLabel("学生ID: ", SwingConstants.RIGHT);
+        studentIdLabel.setFont(labelFont);
+        formPanel.add(studentIdLabel, gbc);
+        
+        gbc.gridx = 1; gbc.gridy = 1;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.weightx = 1.0;
+        final JTextField studentIdField = new JTextField(studentId);
+        studentIdField.setFont(fieldFont);
+        formPanel.add(studentIdField, gbc);
+        
+        // 学院
+        gbc.gridx = 0; gbc.gridy = 2;
+        gbc.fill = GridBagConstraints.NONE;
+        gbc.weightx = 0;
+        JLabel collegeLabel = new JLabel("学院: ", SwingConstants.RIGHT);
+        collegeLabel.setFont(labelFont);
+        formPanel.add(collegeLabel, gbc);
+        
+        gbc.gridx = 1; gbc.gridy = 2;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.weightx = 1.0;
+        final JTextField collegeField = new JTextField(college);
+        collegeField.setFont(fieldFont);
+        formPanel.add(collegeField, gbc);
+        
+        // 专业
+        gbc.gridx = 0; gbc.gridy = 3;
+        gbc.fill = GridBagConstraints.NONE;
+        gbc.weightx = 0;
+        JLabel majorLabel = new JLabel("专业: ", SwingConstants.RIGHT);
+        majorLabel.setFont(labelFont);
+        formPanel.add(majorLabel, gbc);
+        
+        gbc.gridx = 1; gbc.gridy = 3;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.weightx = 1.0;
+        final JTextField majorField = new JTextField(major);
+        majorField.setFont(fieldFont);
+        formPanel.add(majorField, gbc);
+        
+        // 邮箱
+        gbc.gridx = 0; gbc.gridy = 4;
+        gbc.fill = GridBagConstraints.NONE;
+        gbc.weightx = 0;
+        JLabel emailLabel = new JLabel("邮箱: ", SwingConstants.RIGHT);
+        emailLabel.setFont(labelFont);
+        formPanel.add(emailLabel, gbc);
+        
+        gbc.gridx = 1; gbc.gridy = 4;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.weightx = 1.0;
+        final JTextField emailField = new JTextField(email);
+        emailField.setFont(fieldFont);
+        formPanel.add(emailField, gbc);
+        
+        // 电话
+        gbc.gridx = 0; gbc.gridy = 5;
+        gbc.fill = GridBagConstraints.NONE;
+        gbc.weightx = 0;
+        JLabel phoneLabel = new JLabel("电话: ", SwingConstants.RIGHT);
+        phoneLabel.setFont(labelFont);
+        formPanel.add(phoneLabel, gbc);
+        
+        gbc.gridx = 1; gbc.gridy = 5;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.weightx = 1.0;
+        final JTextField phoneField = new JTextField(phone);
+        phoneField.setFont(fieldFont);
+        formPanel.add(phoneField, gbc);
+        
+        contentPanel.add(formPanel, BorderLayout.CENTER);
+        
+        // 按钮面板
+        JPanel buttonPanel = new JPanel();
+        buttonPanel.setLayout(new FlowLayout(FlowLayout.CENTER, 10, 10));
+        
+        JButton saveButton = new JButton("保存");
+        saveButton.setFont(new Font("宋体", Font.PLAIN, 14));
+        saveButton.setPreferredSize(new Dimension(100, 35));
+        saveButton.addActionListener(e -> {
+            String name = nameField.getText().trim();
+            String newStudentId = studentIdField.getText().trim();
+            String newCollege = collegeField.getText().trim();
+            String newMajor = majorField.getText().trim();
+            String newEmail = emailField.getText().trim();
+            String newPhone = phoneField.getText().trim();
+            
+            if (name.isEmpty() || newStudentId.isEmpty() || newCollege.isEmpty() || 
+                newMajor.isEmpty() || newEmail.isEmpty() || newPhone.isEmpty()) {
+                JOptionPane.showMessageDialog(dialog, "请填写所有必填信息！");
+                return;
+            }
+            
+            // 更新个人信息数据
+            studentName = name;
+            studentId = newStudentId;
+            college = newCollege;
+            major = newMajor;
+            email = newEmail;
+            phone = newPhone;
+            
+            JOptionPane.showMessageDialog(dialog, "个人信息修改成功！");
+            dialog.dispose();
+            
+            // 刷新个人信息页面
+            refreshPersonalInfoPanel();
+        });
+        
+        JButton cancelButton = new JButton("取消");
+        cancelButton.setFont(new Font("宋体", Font.PLAIN, 14));
+        cancelButton.setPreferredSize(new Dimension(100, 35));
+        cancelButton.addActionListener(e -> dialog.dispose());
+        
+        buttonPanel.add(saveButton);
+        buttonPanel.add(cancelButton);
+        
+        contentPanel.add(buttonPanel, BorderLayout.SOUTH);
+        dialog.add(contentPanel);
+        
+        dialog.setVisible(true);
+    }
+    
+    // 修改密码对话框
+    private void showChangePasswordDialog() {
+        JDialog dialog = new JDialog(this, "修改密码", true);
+        dialog.setSize(450, 300);
+        dialog.setLocationRelativeTo(this);
+        
+        JPanel contentPanel = new JPanel();
+        contentPanel.setLayout(new BorderLayout());
+        contentPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+        
+        // 创建密码表单
+        JPanel formPanel = new JPanel();
+        formPanel.setLayout(new GridBagLayout());
+        formPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(8, 8, 8, 8);
+        gbc.anchor = GridBagConstraints.WEST;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.gridwidth = 1;
+        
+        // 旧密码
+        gbc.gridx = 0; gbc.gridy = 0;
+        formPanel.add(new JLabel("旧密码: "), gbc);
+        gbc.gridx = 1;
+        final JPasswordField oldPasswordField = new JPasswordField(20);
+        formPanel.add(oldPasswordField, gbc);
+        
+        // 新密码
+        gbc.gridx = 0; gbc.gridy = 1;
+        formPanel.add(new JLabel("新密码: "), gbc);
+        gbc.gridx = 1;
+        final JPasswordField newPasswordField = new JPasswordField(20);
+        formPanel.add(newPasswordField, gbc);
+        
+        // 确认新密码
+        gbc.gridx = 0; gbc.gridy = 2;
+        formPanel.add(new JLabel("确认新密码: "), gbc);
+        gbc.gridx = 1;
+        final JPasswordField confirmPasswordField = new JPasswordField(20);
+        formPanel.add(confirmPasswordField, gbc);
+        
+        contentPanel.add(formPanel, BorderLayout.CENTER);
+        
+        // 按钮面板
+        JPanel buttonPanel = new JPanel();
+        buttonPanel.setLayout(new FlowLayout(FlowLayout.CENTER, 10, 10));
+        
+        JButton changeButton = new JButton("确认修改");
+        changeButton.addActionListener(e -> {
+            String oldPassword = new String(oldPasswordField.getPassword());
+            String newPassword = new String(newPasswordField.getPassword());
+            String confirmPassword = new String(confirmPasswordField.getPassword());
+            
+            if (oldPassword.isEmpty() || newPassword.isEmpty() || confirmPassword.isEmpty()) {
+                JOptionPane.showMessageDialog(dialog, "请填写所有密码字段！");
+                return;
+            }
+            
+            if (!newPassword.equals(confirmPassword)) {
+                JOptionPane.showMessageDialog(dialog, "两次输入的新密码不一致！");
+                return;
+            }
+            
+            if (newPassword.length() < 6) {
+                JOptionPane.showMessageDialog(dialog, "新密码长度至少6位！");
+                return;
+            }
+            
+            JOptionPane.showMessageDialog(dialog, "密码修改成功！");
+            dialog.dispose();
+        });
+        
+        JButton cancelButton = new JButton("取消");
+        cancelButton.addActionListener(e -> dialog.dispose());
+        
+        buttonPanel.add(changeButton);
+        buttonPanel.add(cancelButton);
+        
+        contentPanel.add(buttonPanel, BorderLayout.SOUTH);
+        dialog.add(contentPanel);
+        
+        dialog.setVisible(true);
+    }
+    
+    // 刷新个人信息页面
+    private void refreshPersonalInfoPanel() {
+        // 查找并移除旧的个人信息页面
+        Component[] components = mainContentPanel.getComponents();
+        for (Component comp : components) {
+            if (comp instanceof JPanel && "personalInfo".equals(((JPanel) comp).getName())) {
+                mainContentPanel.remove(comp);
+                break;
+            }
+        }
+        
+        // 重新创建并添加页面
+        JPanel newPanel = createPersonalInfoPanel();
+        mainContentPanel.add(newPanel, "personalInfo");
+        
+        // 重新布局
+        mainContentPanel.revalidate();
+        mainContentPanel.repaint();
+        
+        // 确保保持在个人信息页面
+        cardLayout.show(mainContentPanel, "personalInfo");
     }
 }
